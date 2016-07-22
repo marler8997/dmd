@@ -15915,6 +15915,38 @@ extern (C++) final class FileInitExp : DefaultInitExp
 
 /***********************************************************
  */
+extern (C++) final class FileDirInitExp : DefaultInitExp
+{
+    extern (D) this(Loc loc)
+    {
+        super(loc, TOKfiledir, __traits(classInstanceSize, FileDirInitExp));
+    }
+
+    override Expression semantic(Scope* sc)
+    {
+        //printf("FileDirInitExp::semantic()\n");
+        type = Type.tstring;
+        return this;
+    }
+
+    override Expression resolveLoc(Loc loc, Scope* sc)
+    {
+        //printf("FileDirInitExp::resolve() %s\n", toChars());
+        const(char)* s = loc.filename ? loc.filename : sc._module.ident.toChars();
+        Expression e = new StringExp(loc, cast(char*)s);
+        e = e.semantic(sc);
+        e = e.castTo(sc, type);
+        return e;
+    }
+
+    override void accept(Visitor v)
+    {
+        v.visit(this);
+    }
+}
+
+/***********************************************************
+ */
 extern (C++) final class LineInitExp : DefaultInitExp
 {
     extern (D) this(Loc loc)

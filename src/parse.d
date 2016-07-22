@@ -87,6 +87,7 @@ __gshared PREC[TOKMAX] precedence =
     TOKassocarrayliteral : PREC.primary,
     TOKclassreference : PREC.primary,
     TOKfile : PREC.primary,
+    TOKfiledir : PREC.primary,
     TOKline : PREC.primary,
     TOKmodulestring : PREC.primary,
     TOKfuncstring : PREC.primary,
@@ -2048,6 +2049,7 @@ final class Parser : Lexer
         case TOKstring:
         case TOKxstring:
         case TOKfile:
+        case TOKfiledir:
         case TOKline:
         case TOKmodulestring:
         case TOKfuncstring:
@@ -4902,6 +4904,7 @@ final class Parser : Lexer
         case TOKlbracket:
         case TOKtraits:
         case TOKfile:
+        case TOKfiledir:
         case TOKline:
         case TOKmodulestring:
         case TOKfuncstring:
@@ -6123,11 +6126,11 @@ final class Parser : Lexer
 
     /*****************************************
      * Parses default argument initializer expression that is an assign expression,
-     * with special handling for __FILE__, __LINE__, __MODULE__, __FUNCTION__, and __PRETTY_FUNCTION__.
+     * with special handling for __FILE__, __FILE_DIR__, __LINE__, __MODULE__, __FUNCTION__, and __PRETTY_FUNCTION__.
      */
     Expression parseDefaultInitExp()
     {
-        if (token.value == TOKfile || token.value == TOKline || token.value == TOKmodulestring || token.value == TOKfuncstring || token.value == TOKprettyfunc)
+        if (token.value == TOKfile || token.value == TOKfiledir || token.value == TOKline || token.value == TOKmodulestring || token.value == TOKfuncstring || token.value == TOKprettyfunc)
         {
             Token* t = peek(&token);
             if (t.value == TOKcomma || t.value == TOKrparen)
@@ -6135,6 +6138,8 @@ final class Parser : Lexer
                 Expression e = null;
                 if (token.value == TOKfile)
                     e = new FileInitExp(token.loc);
+                else if (token.value == TOKfiledir)
+                    e = new FileDirInitExp(token.loc);
                 else if (token.value == TOKline)
                     e = new LineInitExp(token.loc);
                 else if (token.value == TOKmodulestring)
@@ -6357,6 +6362,7 @@ final class Parser : Lexer
                     case TOKstring:
                     case TOKxstring:
                     case TOKfile:
+                    case TOKfiledir:
                     case TOKline:
                     case TOKmodulestring:
                     case TOKfuncstring:
@@ -7125,6 +7131,13 @@ final class Parser : Lexer
                 nextToken();
                 break;
             }
+        case TOKfiledir:
+            {
+                const(char)* s = loc.filename ? loc.filename : mod.ident.toChars();
+                e = new StringExp(loc, cast(char*)s);
+                nextToken();
+                break;
+            }
         case TOKline:
             e = new IntegerExp(loc, loc.linnum, Type.tint32);
             nextToken();
@@ -7757,6 +7770,7 @@ final class Parser : Lexer
                         case TOKtypeof:
                         case TOKvector:
                         case TOKfile:
+                        case TOKfiledir:
                         case TOKline:
                         case TOKmodulestring:
                         case TOKfuncstring:

@@ -1279,6 +1279,11 @@ extern (C++) class Visitor
         visit(cast(DefaultInitExp)e);
     }
 
+    /*void visit(FileDirInitExp e)
+    {
+        visit(cast(DefaultInitExp)e);
+    }*/
+
     void visit(LineInitExp e)
     {
         visit(cast(DefaultInitExp)e);

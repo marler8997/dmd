@@ -273,6 +273,7 @@ class IdentityExp;
 class CondExp;
 class DefaultInitExp;
 class FileInitExp;
+class FileDirInitExp;
 class LineInitExp;
 class ModuleInitExp;
 class FuncInitExp;
@@ -559,6 +560,7 @@ public:
     virtual void visit(CondExp *e) { visit((BinExp *)e); }
     virtual void visit(DefaultInitExp *e) { visit((Expression *)e); }
     virtual void visit(FileInitExp *e) { visit((DefaultInitExp *)e); }
+    //virtual void visit(FileDirInitExp *e) { visit((DefaultInitExp *)e); }
     virtual void visit(LineInitExp *e) { visit((DefaultInitExp *)e); }
     virtual void visit(ModuleInitExp *e) { visit((DefaultInitExp *)e); }
     virtual void visit(FuncInitExp *e) { visit((DefaultInitExp *)e); }

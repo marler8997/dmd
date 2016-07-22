@@ -1382,6 +1382,14 @@ public:
     void accept(Visitor *v) { v->visit(this); }
 };
 
+class FileDirInitExp : public DefaultInitExp
+{
+public:
+    Expression *semantic(Scope *sc);
+    Expression *resolveLoc(Loc loc, Scope *sc);
+    void accept(Visitor *v) { v->visit(this); }
+};
+
 class LineInitExp : public DefaultInitExp
 {
 public:

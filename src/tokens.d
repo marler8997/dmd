@@ -287,6 +287,7 @@ enum TOK : int
     TOKgshared,
     TOKline,
     TOKfile,
+    TOKfiledir,
     TOKmodulestring,
     TOKfuncstring,
     TOKprettyfunc,
@@ -533,6 +534,7 @@ alias TOKnothrow = TOK.TOKnothrow;
 alias TOKgshared = TOK.TOKgshared;
 alias TOKline = TOK.TOKline;
 alias TOKfile = TOK.TOKfile;
+alias TOKfiledir = TOK.TOKfiledir;
 alias TOKmodulestring = TOK.TOKmodulestring;
 alias TOKfuncstring = TOK.TOKfuncstring;
 alias TOKprettyfunc = TOK.TOKprettyfunc;
@@ -687,6 +689,7 @@ extern (C++) struct Token
         TOKvector: "__vector",
         TOKoverloadset: "__overloadset",
         TOKfile: "__FILE__",
+        TOKfiledir: "__FILE_DIR__",
         TOKline: "__LINE__",
         TOKmodulestring: "__MODULE__",
         TOKfuncstring: "__FUNCTION__",
@@ -1178,6 +1181,7 @@ private immutable TOK[] keywords =
     TOKvector,
     TOKoverloadset,
     TOKfile,
+    TOKfiledir,
     TOKline,
     TOKmodulestring,
     TOKfuncstring,
