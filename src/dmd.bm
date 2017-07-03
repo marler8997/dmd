@@ -1,0 +1,350 @@
+BuildContract optabgen
+{
+    OutputType Executable;
+
+    CLanguageOptions
+    {
+        Define MARS;
+        Define DM_TARGET_CPU_X86;
+        IncludePath ddmd/tk;
+    }
+
+    Source
+    {
+        Language Cpp;
+        File ddmd/backend/optabgen.c;
+    }
+}
+
+BuildStep optabgen_files
+{
+    Execute $(optabgen.Output) {}
+    Output
+    {
+        Source
+        {
+            Language Cpp;
+            File cdxxx.c;
+            File debtab.c;
+            File elxxx.c;
+            File fltables.c;
+            File optab.c;
+            File tytab.c;
+        }
+    }
+}
+
+BuildContract backend
+{
+    OutputType StaticLibrary;
+
+    DependsOn $(optabgen_files.Output);
+
+    CLanguageOptions
+    {
+        WarningsAsErrors true;
+
+        Define MARS;
+        Define DM_TARGET_CPU_X86;
+        Define DM_TARGET_WINDOS;
+
+        IncludePath ddmd/backend;
+        IncludePath ddmd/tk;
+        IncludePath $(optabgen_files.OutputPath);
+    }
+    Source
+    {
+        Language Cpp;
+        File ddmd/backend/go.c;
+        File ddmd/backend/gdag.c;
+        File ddmd/backend/gother.c;
+        File ddmd/backend/gflow.c;
+        File ddmd/backend/gloop.c;
+        File ddmd/backend/var.c;
+        File ddmd/backend/el.c;
+        File ddmd/backend/newman.c;
+        File ddmd/backend/glocal.c;
+        File ddmd/backend/os.c;
+        File ddmd/backend/nteh.c;
+        File ddmd/backend/evalu8.c;
+        File ddmd/backend/cgcs.c;
+        File ddmd/backend/rtlsym.c;
+        File ddmd/backend/cgelem.c;
+        File ddmd/backend/cgen.c;
+        File ddmd/backend/cgreg.c;
+        File ddmd/backend/out.c;
+        File ddmd/backend/blockopt.c;
+        File ddmd/backend/cgobj.c;
+        File ddmd/backend/cg.c;
+        File ddmd/backend/cgcv.c;
+        File ddmd/backend/type.c;
+        File ddmd/backend/dt.c;
+        File ddmd/backend/debug.c;
+        File ddmd/backend/code.c;
+        File ddmd/backend/cg87.c;
+        File ddmd/backend/cgxmm.c;
+        File ddmd/backend/cgsched.c;
+        File ddmd/backend/ee.c;
+        File ddmd/backend/symbol.c;
+        File ddmd/backend/cgcod.c;
+        File ddmd/backend/cod1.c;
+        File ddmd/backend/cod2.c;
+        File ddmd/backend/cod3.c;
+        File ddmd/backend/cod4.c;
+        File ddmd/backend/cod5.c;
+        File ddmd/backend/outbuf.c;
+        File ddmd/backend/bcomplex.c;
+        File ddmd/backend/ptrntab.c;
+        File ddmd/backend/aa.c;
+        File ddmd/backend/ti_achar.c;
+        File ddmd/backend/md5.c;
+        File ddmd/backend/ti_pvoid.c;
+        File ddmd/backend/mscoffobj.c;
+        File ddmd/backend/pdata.c;
+        File ddmd/backend/cv8.c;
+        File ddmd/backend/backconfig.c;
+        File ddmd/backend/divcoeff.c;
+        File ddmd/backend/dwarf.c;
+        File ddmd/backend/compress.c;
+        File ddmd/backend/varstats.c;
+        File ddmd/backend/ph2.c;
+        File ddmd/backend/util2.c;
+        File ddmd/backend/tk.c;
+        File ddmd/backend/gsroa.c;
+    }
+}
+
+BuildContract newdelete
+{
+    OutputType ObjectFile;
+    CLanguageOptions
+    {
+        Define TARGET_WINDOS;
+        Define DM_TARGET_CPU_X86;
+        IncludePath ddmd/root;
+    }
+    Source
+    {
+        Language Cpp;
+        File ddmd/root/newdelete.c;
+    }
+}
+
+BuildContract lexer
+{
+    OutputType StaticLibrary;
+    DLanguageOptions
+    {
+        StringImportPath ..;
+        Version MARS;
+    }
+    Source
+    {
+        Language D;
+        File ddmd/console.d;
+        File ddmd/entity.d;
+        File ddmd/errors.d;
+        File ddmd/globals.d;
+        File ddmd/id.d;
+        File ddmd/identifier.d;
+        File ddmd/lexer.d;
+        File ddmd/tokens.d;
+        File ddmd/utf.d;
+        File ddmd/root/aav.d;
+        File ddmd/root/array.d;
+        File ddmd/root/ctfloat.d;
+        File ddmd/root/file.d;
+        File ddmd/root/filename.d;
+        File ddmd/root/man.d;
+        File ddmd/root/outbuffer.d;
+        File ddmd/root/port.d;
+        File ddmd/root/response.d;
+        File ddmd/root/rmem.d;
+        File ddmd/root/rootobject.d;
+        File ddmd/root/speller.d;
+        File ddmd/root/stringtable.d;
+        File ddmd/root/hash.d;
+    }
+}
+
+BuildStep idgen
+{
+    Source
+    {
+        Language D;
+        File ddmd/idgen.d;
+    }
+    Execute dmd
+    {
+        CommandLine
+        {
+            AddArgument "-run";
+        }
+        CommandLine
+        {
+            ExpandList Contract.Source.File;
+        }
+    }
+    Output
+    {
+        Source
+        {
+            Language D;
+            File ddmd/id.d;
+        }
+        Source
+        {
+            Language Cpp;
+            File ddmd/id.h;
+        }
+    }
+}
+
+BuildContract dmd
+{
+    OutputType Executable;
+
+    DLanguageOptions
+    {
+        StringImportPath ../res;
+        Version MARS;
+    }
+
+    Library $(backend.Output);   // ..\generated\windows\release\32\backend.lib
+    Library $(newdelete.Output); // ..\generated\windows\release\32\newdelete.obj
+    Library $(lexer.Output);     // ..\generated\windows\release\32\lexer.lib
+
+    Source
+    {
+        Language D;
+        File ddmd/access.d;
+        File ddmd/aggregate.d;
+        File ddmd/aliasthis.d;
+        File ddmd/apply.d;
+        File ddmd/argtypes.d;
+        File ddmd/arrayop.d;
+        File ddmd/arraytypes.d;
+        File ddmd/astcodegen.d;
+        File ddmd/attrib.d;
+        File ddmd/builtin.d;
+        File ddmd/canthrow.d;
+        File ddmd/clone.d;
+        File ddmd/complex.d;
+        File ddmd/cond.d;
+        File ddmd/constfold.d;
+        File ddmd/cppmangle.d;
+        File ddmd/ctfeexpr.d;
+        File ddmd/dcast.d;
+        File ddmd/dclass.d;
+        File ddmd/declaration.d;
+        File ddmd/delegatize.d;
+        File ddmd/denum.d;
+        File ddmd/dimport.d;
+        File ddmd/dinifile.d;
+        File ddmd/dinterpret.d;
+        File ddmd/dmacro.d;
+        File ddmd/dmangle.d;
+        File ddmd/dmodule.d;
+        File ddmd/doc.d;
+        File ddmd/dscope.d;
+        File ddmd/dstruct.d;
+        File ddmd/dsymbol.d;
+        File ddmd/dtemplate.d;
+        File ddmd/dversion.d;
+        File ddmd/escape.d;
+        File ddmd/expression.d;
+        File ddmd/func.d;
+        File ddmd/hdrgen.d;
+        File ddmd/imphint.d;
+        File ddmd/impcnvtab.d;
+        File ddmd/init.d;
+        File ddmd/inline.d;
+        File ddmd/inlinecost.d;
+        File ddmd/intrange.d;
+        File ddmd/json.d;
+        File ddmd/lib.d;
+        File ddmd/link.d;
+        File ddmd/mars.d;
+        File ddmd/mtype.d;
+        File ddmd/nogc.d;
+        File ddmd/nspace.d;
+        File ddmd/objc.d;
+        File ddmd/opover.d;
+        File ddmd/optimize.d;
+        File ddmd/parse.d;
+        File ddmd/sapply.d;
+        File ddmd/sideeffect.d;
+        File ddmd/statement.d;
+        File ddmd/staticassert.d;
+        File ddmd/target.d;
+        File ddmd/safe.d;
+        File ddmd/blockexit.d;
+        File ddmd/asttypename.d;
+        File ddmd/printast.d;
+        File ddmd/traits.d;
+        File ddmd/utils.d;
+        File ddmd/visitor.d;
+        File ddmd/libomf.d;
+        File ddmd/scanomf.d;
+        File ddmd/typinf.d;
+        File ddmd/libmscoff.d;
+        File ddmd/scanmscoff.d;
+        File ddmd/statement_rewrite_walker.d;
+        File ddmd/statementsem.d;
+        File ddmd/staticcond.d;
+        File ddmd/irstate.d;
+        File ddmd/toctype.d;
+        File ddmd/glue.d;
+        File ddmd/gluelayer.d;
+        File ddmd/todt.d;
+        File ddmd/tocsym.d;
+        File ddmd/toir.d;
+        File ddmd/dmsc.d;
+        File ddmd/tocvdebug.d;
+        File ddmd/s2ir.d;
+        File ddmd/toobj.d;
+        File ddmd/e2ir.d;
+        File ddmd/objc_glue_stubs.d;
+        File ddmd/eh.d;
+        File ddmd/iasm.d;
+        File ddmd/backend/bcomplex.d;
+        File ddmd/backend/cc.d;
+        File ddmd/backend/cdef.d;
+        File ddmd/backend/cgcv.d;
+        File ddmd/backend/code.d;
+        File ddmd/backend/cv4.d;
+        File ddmd/backend/dt.d;
+        File ddmd/backend/el.d;
+        File ddmd/backend/global.d;
+        File ddmd/backend/obj.d;
+        File ddmd/backend/oper.d;
+        File ddmd/backend/outbuf.d;
+        File ddmd/backend/rtlsym.d;
+        File ddmd/backend/code_x86.d;
+        File ddmd/backend/iasm.d;
+        File ddmd/backend/ty.d;
+        File ddmd/backend/type.d;
+        File ddmd/backend/exh.d;
+        File ddmd/backend/mach.d;
+        File ddmd/backend/md5.d;
+        File ddmd/backend/mscoff.d;
+        File ddmd/backend/dwarf.d;
+        File ddmd/backend/dwarf2.d;
+        File ddmd/backend/xmm.d;
+        File ddmd/tk/dlist.d;
+        File ddmd/root/aav.d;
+        File ddmd/root/array.d;
+        File ddmd/root/ctfloat.d;
+        File ddmd/root/file.d;
+        File ddmd/root/filename.d;
+        File ddmd/root/man.d;
+        File ddmd/root/outbuffer.d;
+        File ddmd/root/port.d;
+        File ddmd/root/response.d;
+        File ddmd/root/rmem.d;
+        File ddmd/root/rootobject.d;
+        File ddmd/root/speller.d;
+        File ddmd/root/stringtable.d;
+        File ddmd/root/hash.d;
+    }
+}
