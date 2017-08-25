@@ -70,6 +70,7 @@ struct Param
     bool obj;               // write object file
     bool link;              // perform link
     bool dll;               // generate shared dynamic library
+    bool compileimports;    // compile imported modules that have not been passed in
     bool lib;               // write library file instead of object file(s)
     bool multiobj;          // break one object file into multiple ones
     bool oneobj;            // write one object file instead of multiple ones

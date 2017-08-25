@@ -381,6 +381,7 @@ extern (C++) final class Module : Package
     // i.e. a module that will be taken all the
     // way to an object file
     Module importedFrom;
+    bool compiledImport;
 
     Dsymbols* decldefs;         // top level declarations for this Module
 
@@ -1381,7 +1382,7 @@ extern (C++) final class Module : Package
 
     bool isRoot()
     {
-        return this.importedFrom == this;
+        return this.importedFrom == this || compiledImport;
     }
 
     // true if the module source file is directly
@@ -1390,6 +1391,44 @@ extern (C++) final class Module : Package
     {
         return this.ident == ident && parent && parent.ident == Id.core && !parent.parent;
     }
+
+    // NOTE: current implementation uses a brittle algorithm to determine whether or not a module exists in a library.
+    //       it simply checks if it's a known module (like 'object') or if it's apart of druntime/phobos by checking it it's
+    //       in std or core or etc.
+    //       The final implementation should actually read all the input files to determine all the modules that have
+    //       been given through object and library files.  Then this function simply checks whether or not this module
+    //       exists in one of those input files.
+    bool inALibrary(ref Strings libmodules)
+    {
+        Dsymbol rootModule = this;
+        int parentModuleCount = 0;
+        while (rootModule.parent)
+        {
+            rootModule = rootModule.parent;
+            parentModuleCount++;
+        }
+
+        import core.stdc.string : strlen;
+        auto rootModuleName = rootModule.toChars()[0..strlen(rootModule.toChars())];
+
+        // 1) check if it is object or gcstatus
+        if (parentModuleCount == 0 && (rootModule.ident == Id.object || rootModuleName == "gcstats"))
+        {
+            return true;
+        }
+        // 2) check if it is in a standard druntime/phobos package
+        if (rootModule.ident == Id.std ||
+           rootModule.ident == Id.core ||
+           (rootModuleName == "etc") )
+        {
+            return true;
+        }
+        // 3) TODO: Check if the module is in one of the object/library files
+        //    passed in to libmodules
+
+        return false;
+    }
+
 
     // Back end
     int doppelganger; // sub-module

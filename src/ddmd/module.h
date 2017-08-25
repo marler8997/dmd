@@ -98,6 +98,7 @@ public:
     // i.e. a module that will be taken all the
     // way to an object file
     Module *importedFrom;
+    bool compiledImport;
 
     Dsymbols *decldefs;         // top level declarations for this Module
 
@@ -144,7 +145,7 @@ public:
     static void clearCache();
     int imports(Module *m);
 
-    bool isRoot() { return this->importedFrom == this; }
+    bool isRoot() { return this->importedFrom == this || compiledImport; }
     // true if the module source file is directly
     // listed in command line.
     bool isCoreModule(Identifier *ident);

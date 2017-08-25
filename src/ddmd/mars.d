@@ -113,6 +113,7 @@ Where:
   -betterC         omit generating some runtime information and helper functions
   -boundscheck=[on|safeonly|off]   bounds checks on, in @safe only, or off
   -c               do not link
+  -ci              compile imported modules that have not been passed in
   -color           turn colored console output on
   -color=[on|off]  force colored console output on or off
   -conf=<filename> use config file at filename
@@ -849,6 +850,31 @@ private int tryMain(size_t argc, const(char)** argv)
             printf("%.*s", cast(int)ob.offset, ob.data);
     }
 
+    if(global.params.compileimports && global.params.link)
+    {
+        auto importedModulesToCompile = Modules();
+        fprintf(global.stdmsg, "compileimports: start\n");
+        for (size_t i = 0; i < Module.amodules.dim; i++)
+        {
+            auto m = Module.amodules[i];
+            if(m.isRoot)
+            {
+                continue;
+            }
+            if(m.inALibrary(libmodules))
+            {
+                //fprintf(global.stdmsg, "not compiling \"%s\" because it is in a library\n", m.toChars());
+                continue;
+            }
+            fprintf(global.stdmsg, "compileimports: compiling \"%s\" (file \"%s\" importedFrom \"%s\")\n",
+                m.toChars(), m.srcfile.toChars, m.importedFrom.toChars());
+            m.compiledImport = true;
+            importedModulesToCompile.push(m);
+        }
+        fprintf(global.stdmsg, "compileimports: compiling %d imported modules\n", importedModulesToCompile.dim);
+        modules.append(&importedModulesToCompile);
+    }
+
     printCtfePerformanceStats();
 
     Library library = null;
@@ -1445,6 +1471,8 @@ private void parseCommandLine(const ref Strings arguments, const size_t argc, re
                 params.useDeprecated = 2;
             else if (strcmp(p + 1, "c") == 0)
                 params.link = false;
+            else if (strcmp(p + 1, "ci") == 0)
+                params.compileimports = true;
             else if (memcmp(p + 1, cast(char*)"color", 5) == 0)
             {
                 params.color = true;
