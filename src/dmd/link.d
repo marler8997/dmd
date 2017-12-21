@@ -290,6 +290,20 @@ public int runLINK()
             OutBuffer cmdbuf;
             global.params.libfiles.push("user32");
             global.params.libfiles.push("kernel32");
+
+            static void writeFilteredOptions(ref OutBuffer cmdbuf, string prefix, bool* first)
+            {
+                for (size_t i = 0; i < global.params.linkswitches.dim; i++)
+                {
+                    auto option = startsWith(global.params.linkswitches[i], prefix.ptr);
+                    if(option)
+                    {
+                        if(*first) *first = false; else cmdbuf.writeByte('+');
+                        cmdbuf.writestring(option);
+                    }
+                }
+            }
+
             for (size_t i = 0; i < global.params.objfiles.dim; i++)
             {
                 if (i)
@@ -337,11 +351,15 @@ public int runLINK()
             else
                 cmdbuf.writestring("nul");
             cmdbuf.writeByte(',');
-            for (size_t i = 0; i < global.params.libfiles.dim; i++)
             {
-                if (i)
-                    cmdbuf.writeByte('+');
-                writeFilename(&cmdbuf, global.params.libfiles[i]);
+                bool first = true;
+                writeFilteredOptions(cmdbuf, ":lib", &first);
+                for (size_t i = 0; i < global.params.libfiles.dim; i++)
+                {
+                    if(first) first = false; else cmdbuf.writeByte('+');
+                    writeFilename(&cmdbuf, global.params.libfiles[i]);
+                }
+                writeFilteredOptions(cmdbuf, ":-lib", &first);
             }
             if (global.params.deffile)
             {
@@ -382,7 +400,8 @@ public int runLINK()
             cmdbuf.writestring("/noi");
             for (size_t i = 0; i < global.params.linkswitches.dim; i++)
             {
-                cmdbuf.writestring(global.params.linkswitches[i]);
+                if (global.params.linkswitches[i][0] != ':')
+                    cmdbuf.writestring(global.params.linkswitches[i]);
             }
             cmdbuf.writeByte(';');
             char* p = cmdbuf.peekString();

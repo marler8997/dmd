@@ -132,3 +132,27 @@ extern (C++) void escapePath(OutBuffer* buf, const(char)* fname)
         fname++;
     }
 }
+
+
+/**
+ * Checks if str starts with prefix.
+ *
+ * Params:
+ *   str = String to check
+ *   prefix = prefix to check if str starts with
+ *
+ * Returns:
+ *   null if str does not start with prefix, otherwise, a pointer
+ *   into str at the end of prefix
+ */
+static inout(char)* startsWith(inout(char)* str, const(char)* prefix)
+{
+    for(size_t i = 0; ; i++)
+    {
+        auto c = prefix[i];
+        if(c == '\0')
+            return str + i;
+        if(str[i] != c)
+            return null;
+    }
+}
