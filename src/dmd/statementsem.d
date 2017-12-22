@@ -2320,6 +2320,12 @@ else
                 fd.inlining = inlining;
             }
         }
+        else if (ps.ident == Id.importPath)
+        {
+            printf("ERROR: pragma(importPath) not implemented\n");
+            fprintf(stderr, "ERROR: pragma(importPath) not implemented\n");
+            assert(0);
+        }
         else
         {
             ps.error("unrecognized `pragma(%s)`", ps.ident.toChars());

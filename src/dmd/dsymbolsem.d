@@ -3078,6 +3078,30 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
                 pd.error("takes no argument");
             goto Ldecl;
         }
+        else if (pd.ident == Id.importPath)
+        {
+            printf("importPath START\n");
+            fprintf(stderr, "importPath START\n");
+            // NOTE: copied from pd.ident == Id.lib
+            if (!pd.args || pd.args.dim != 1)
+                pd.error("string expected for pragma(importPath)");
+            else
+            {
+                auto se = semanticString(sc, (*pd.args)[0], "import path");
+                if (!se)
+                    goto Lnodecl;
+                (*pd.args)[0] = se;
+
+                auto name = cast(char*)mem.xmalloc(se.len + 1);
+                memcpy(name, se.string, se.len);
+                name[se.len] = 0;
+                printf("importPath %s\n", name);
+                fprintf(stderr, "importPath %s\n", name);
+                global.params.imppath.push(name);
+                //mem.xfree(name);
+            }
+            goto Lnodecl;
+        }
         else if (global.params.ignoreUnsupportedPragmas)
         {
             if (global.params.verbose)

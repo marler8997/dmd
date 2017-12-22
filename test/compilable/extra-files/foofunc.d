@@ -1,0 +1,2 @@
+module foofunc;
+void foo() { }

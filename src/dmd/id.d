@@ -299,6 +299,7 @@ immutable Msgtable[] msgtable =
     { "mangle" },
     { "msg" },
     { "startaddress" },
+    { "importPath" },
     { "crt_constructor" },
     { "crt_destructor" },
 
