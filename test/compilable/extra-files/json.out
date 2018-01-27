@@ -1,8 +1,24 @@
 [
  {
+  "kind" : "compilerInfo",
+  "binary" : "VALUE_REMOVED_FOR_TEST",
+  "version" : "VALUE_REMOVED_FOR_TEST",
+  "supportsIncludeImports" : true
+ },
+ {
+  "kind" : "buildInfo",
+  "cwd" : "VALUE_REMOVED_FOR_TEST",
+  "config" : "VALUE_REMOVED_FOR_TEST",
+  "importPaths" : [
+   "compilable",
+   "../../druntime/import",
+   "../../phobos"
+  ]
+ },
+ {
   "name" : "json",
   "kind" : "module",
-  "file" : "compilable/json.d",
+  "file" : "VALUE_REMOVED_FOR_TEST",
   "members" : [
    {
     "name" : "_staticCtor1",
@@ -12,7 +28,7 @@
     "storageClass" : [
      "static"
     ],
-    "deco" : "FZv",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "endline" : 8,
     "endchar" : 16
    },
@@ -24,7 +40,7 @@
     "storageClass" : [
      "static"
     ],
-    "deco" : "FZv",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "endline" : 10,
     "endchar" : 17
    },
@@ -33,14 +49,14 @@
     "kind" : "alias",
     "line" : 13,
     "char" : 11,
-    "deco" : "i"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "x",
     "kind" : "variable",
     "line" : 14,
     "char" : 7,
-    "deco" : "i",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "originalType" : "myInt"
    },
    {
@@ -81,7 +97,7 @@
      {
       "name" : "T",
       "kind" : "value",
-      "deco" : "i"
+      "deco" : "VALUE_REMOVED_FOR_TEST"
      }
     ],
     "members" : [
@@ -96,7 +112,7 @@
         "kind" : "variable",
         "line" : 17,
         "char" : 25,
-        "deco" : "i",
+        "deco" : "VALUE_REMOVED_FOR_TEST",
         "init" : "T"
        }
       ]
@@ -160,7 +176,7 @@
       "kind" : "constructor",
       "line" : 23,
       "char" : 5,
-      "deco" : "FZC4json4Bar2",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "originalType" : "()",
       "endline" : 23,
       "endchar" : 13
@@ -170,7 +186,7 @@
       "kind" : "destructor",
       "line" : 24,
       "char" : 5,
-      "deco" : "FZv",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "endline" : 24,
       "endchar" : 14
      },
@@ -182,7 +198,7 @@
       "storageClass" : [
        "static"
       ],
-      "deco" : "FNaNbNiNfZv",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "originalType" : "()",
       "endline" : 26,
       "endchar" : 19
@@ -196,7 +212,7 @@
       "storageClass" : [
        "abstract"
       ],
-      "deco" : "FZS4json__T3FooTiZQh"
+      "deco" : "VALUE_REMOVED_FOR_TEST"
      },
      {
       "name" : "t",
@@ -206,7 +222,7 @@
       "storageClass" : [
        "override"
       ],
-      "deco" : "xFZi",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "endline" : 28,
       "endchar" : 40,
       "overrides" : [
@@ -232,20 +248,20 @@
       "protection" : "private",
       "line" : 32,
       "char" : 17,
-      "deco" : "i",
-      "offset" : 32
+      "deco" : "VALUE_REMOVED_FOR_TEST",
+      "offset" : 0
      },
      {
       "name" : "this",
       "kind" : "constructor",
       "line" : 33,
       "char" : 5,
-      "deco" : "FiZC4json4Bar3",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "originalType" : "(int i)",
       "parameters" : [
        {
         "name" : "i",
-        "deco" : "i"
+        "deco" : "VALUE_REMOVED_FOR_TEST"
        }
       ],
       "endline" : 33,
@@ -260,7 +276,7 @@
       "storageClass" : [
        "override"
       ],
-      "deco" : "FZS4json__T3FooTiZQh",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "endline" : 35,
       "endchar" : 61,
       "overrides" : [
@@ -280,7 +296,7 @@
       "kind" : "variable",
       "line" : 39,
       "char" : 10,
-      "deco" : "C4json4Bar2",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "originalType" : "Bar2",
       "offset" : 0
      },
@@ -295,7 +311,7 @@
         "kind" : "variable",
         "line" : 42,
         "char" : 19,
-        "deco" : "s",
+        "deco" : "VALUE_REMOVED_FOR_TEST",
         "offset" : 0
        },
        {
@@ -303,15 +319,15 @@
         "kind" : "variable",
         "line" : 43,
         "char" : 17,
-        "deco" : "i",
-        "offset" : 4
+        "deco" : "VALUE_REMOVED_FOR_TEST",
+        "offset" : 0
        },
        {
         "name" : "o",
         "kind" : "variable",
         "line" : 45,
         "char" : 16,
-        "deco" : "C6Object",
+        "deco" : "VALUE_REMOVED_FOR_TEST",
         "originalType" : "Object",
         "offset" : 0
        }
@@ -328,7 +344,7 @@
      {
       "name" : "b",
       "kind" : "value",
-      "deco" : "b"
+      "deco" : "VALUE_REMOVED_FOR_TEST"
      }
     ],
     "members" : [
@@ -368,19 +384,19 @@
     "kind" : "function",
     "line" : 69,
     "char" : 16,
-    "deco" : "FNeKkC4json4Bar2Zi",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "originalType" : "@trusted myInt(ref uint blah, Bar2 foo = new Bar3(7))",
     "parameters" : [
      {
       "name" : "blah",
-      "deco" : "k",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "storageClass" : [
        "ref"
       ]
      },
      {
       "name" : "foo",
-      "deco" : "C4json4Bar2",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "default" : "new Bar3(7)"
      }
     ],
@@ -392,7 +408,7 @@
     "kind" : "function",
     "line" : 74,
     "char" : 15,
-    "deco" : "FNbNdZi",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "endline" : 91,
     "endchar" : 1
    },
@@ -558,7 +574,7 @@
     "storageClass" : [
      "const"
     ],
-    "deco" : "xC6Object",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "originalType" : "Object",
     "init" : "Object()"
    },
@@ -637,10 +653,10 @@
    {
     "name" : "a0",
     "kind" : "variable",
-    "file" : "compilable/json.d-mixin-133",
+    "file" : "VALUE_REMOVED_FOR_TEST",
     "line" : 133,
     "char" : 5,
-    "deco" : "i",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "init" : "1"
    },
    {
@@ -648,7 +664,7 @@
     "kind" : "variable",
     "line" : 133,
     "char" : 5,
-    "deco" : "i",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "init" : "1"
    },
    {
@@ -656,12 +672,12 @@
     "kind" : "variable",
     "line" : 133,
     "char" : 5,
-    "deco" : "i",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "init" : "1"
    },
    {
     "kind" : "template",
-    "file" : "compilable/json.d",
+    "file" : "VALUE_REMOVED_FOR_TEST",
     "line" : 136,
     "char" : 1,
     "name" : "Seq",
@@ -685,7 +701,7 @@
    {
     "name" : "b0",
     "kind" : "alias",
-    "file" : "compilable/json.d-mixin-140",
+    "file" : "VALUE_REMOVED_FOR_TEST",
     "line" : 140,
     "char" : 1
    },
@@ -706,14 +722,14 @@
    {
     "name" : "foo",
     "kind" : "function",
-    "file" : "compilable/json.d",
+    "file" : "VALUE_REMOVED_FOR_TEST",
     "line" : 144,
     "char" : 9,
-    "deco" : "FNcNfNkKiZi",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "parameters" : [
      {
       "name" : "a",
-      "deco" : "i",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "storageClass" : [
        "ref",
        "return"
@@ -728,11 +744,11 @@
     "kind" : "function",
     "line" : 149,
     "char" : 6,
-    "deco" : "FNfMNkPiZQd",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "parameters" : [
      {
       "name" : "a",
-      "deco" : "Pi",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "storageClass" : [
        "scope",
        "return"
@@ -747,11 +763,11 @@
     "kind" : "function",
     "line" : 154,
     "char" : 10,
-    "deco" : "FNcNfMNkKPiZQd",
+    "deco" : "VALUE_REMOVED_FOR_TEST",
     "parameters" : [
      {
       "name" : "a",
-      "deco" : "Pi",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "storageClass" : [
        "scope",
        "ref",
@@ -773,7 +789,7 @@
       "kind" : "function",
       "line" : 162,
       "char" : 15,
-      "deco" : "FNcNjNfZS4json5SafeS",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "endline" : 165,
       "endchar" : 5
      },
@@ -782,7 +798,7 @@
       "kind" : "function",
       "line" : 167,
       "char" : 11,
-      "deco" : "FNjNfZS4json5SafeS",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "endline" : 170,
       "endchar" : 5
      },
@@ -791,7 +807,7 @@
       "kind" : "function",
       "line" : 172,
       "char" : 15,
-      "deco" : "FNcNjNfZS4json5SafeS",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "endline" : 175,
       "endchar" : 5
      },
@@ -803,7 +819,7 @@
       "storageClass" : [
        "@safe"
       ],
-      "deco" : "Pi",
+      "deco" : "VALUE_REMOVED_FOR_TEST",
       "offset" : 0
      }
     ]
@@ -816,14 +832,14 @@
     "storageClass" : [
      "extern"
     ],
-    "deco" : "i"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "vlinkageD",
     "kind" : "variable",
     "line" : 181,
     "char" : 15,
-    "deco" : "i"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "vlinakgeC",
@@ -831,7 +847,7 @@
     "line" : 182,
     "char" : 15,
     "linkage" : "c",
-    "deco" : "i"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "vlinkageCpp",
@@ -842,7 +858,7 @@
      "__gshared"
     ],
     "linkage" : "cpp",
-    "deco" : "i"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "vlinkageWindows",
@@ -850,7 +866,7 @@
     "line" : 184,
     "char" : 21,
     "linkage" : "windows",
-    "deco" : "i"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "vlinkagePascal",
@@ -858,7 +874,7 @@
     "line" : 185,
     "char" : 20,
     "linkage" : "pascal",
-    "deco" : "i"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "vlinkageObjc",
@@ -866,7 +882,7 @@
     "line" : 186,
     "char" : 25,
     "linkage" : "objc",
-    "deco" : "i"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "flinkageDefault",
@@ -876,14 +892,14 @@
     "storageClass" : [
      "extern"
     ],
-    "deco" : "FZi"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "flinkageD",
     "kind" : "function",
     "line" : 189,
     "char" : 15,
-    "deco" : "FZi"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "linakgeC",
@@ -891,7 +907,7 @@
     "line" : 190,
     "char" : 15,
     "linkage" : "c",
-    "deco" : "UZi"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "flinkageCpp",
@@ -899,7 +915,7 @@
     "line" : 191,
     "char" : 17,
     "linkage" : "cpp",
-    "deco" : "RZi"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "flinkageWindows",
@@ -907,7 +923,7 @@
     "line" : 192,
     "char" : 21,
     "linkage" : "windows",
-    "deco" : "WZi"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "flinkagePascal",
@@ -915,7 +931,7 @@
     "line" : 193,
     "char" : 20,
     "linkage" : "pascal",
-    "deco" : "VZi"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
    },
    {
     "name" : "flinkageObjc",
@@ -923,7 +939,37 @@
     "line" : 194,
     "char" : 25,
     "linkage" : "objc",
-    "deco" : "YZi"
+    "deco" : "VALUE_REMOVED_FOR_TEST"
+   }
+  ]
+ },
+ {
+  "kind" : "semantics",
+  "modules" : [
+   {
+    "name" : "json",
+    "file" : "compilable/json.d",
+    "isRoot" : true
+   },
+   {
+    "name" : "imports.jsonimport1",
+    "file" : "compilable/imports/jsonimport1.d",
+    "isRoot" : false
+   },
+   {
+    "name" : "imports.jsonimport2",
+    "file" : "compilable/imports/jsonimport2.d",
+    "isRoot" : false
+   },
+   {
+    "name" : "imports.jsonimport3",
+    "file" : "compilable/imports/jsonimport3.d",
+    "isRoot" : false
+   },
+   {
+    "name" : "imports.jsonimport4",
+    "file" : "compilable/imports/jsonimport4.d",
+    "isRoot" : false
    }
   ]
  }
