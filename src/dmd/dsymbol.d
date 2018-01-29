@@ -229,7 +229,7 @@ extern (C++) class Dsymbol : RootObject
         {
             auto m = getModule();
             if (m && m.srcfile)
-                loc.filename = m.srcfile.toChars();
+                loc.setFilename(m.srcfile.toChars(), FilenameType.default_);
         }
         return loc;
     }

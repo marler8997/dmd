@@ -2293,7 +2293,7 @@ class Lexer
             Lnewline:
                 this.scanloc.linnum = linnum;
                 if (filespec)
-                    this.scanloc.filename = filespec;
+                    this.scanloc.setFilename(filespec, FilenameType.fromPoundLine);
                 return;
             case '\r':
                 p++;

@@ -257,7 +257,7 @@ final class Parser(AST) : Lexer
              */
             char* filename = cast(char*)mem.xmalloc(strlen(loc.filename) + 7 + (loc.linnum).sizeof * 3 + 1);
             sprintf(filename, "%s-mixin-%d", loc.filename, cast(int)loc.linnum);
-            scanloc.filename = filename;
+            scanloc.setFilename(filename, FilenameType.mixin_);
         }
 
         mod = _module;
@@ -7270,11 +7270,11 @@ final class Parser(AST) : Lexer
             {
                 const(char)* srcfile = mod.srcfile.name.toChars();
                 const(char)* s;
-                if(loc.filename && !FileName.equals(loc.filename, srcfile)) {
+                if (loc.isValid() && loc.filenameType != FilenameType.default_)
                     s = loc.filename;
-                } else {
+                else
                     s = FileName.combine(mod.srcfilePath, srcfile);
-                }
+
                 e = new AST.StringExp(loc, cast(char*)s);
                 nextToken();
                 break;

@@ -295,18 +295,29 @@ struct DArray
     T *ptr;
 };
 
+enum FilenameType
+{
+    FILENAME_TYPE_DEFAULT,
+    FILENAME_TYPE_FROM_POUND_LINE,
+    FILENAME_TYPE_MIXIN,
+};
+
 // file location
 struct Loc
 {
+    // Note: it is assumed that filename is always either absolute or
+    //       relative to CWD
     const char *filename;
     unsigned linnum;
     unsigned charnum;
+    FilenameType filenameType;
 
     Loc()
     {
         linnum = 0;
         charnum = 0;
         filename = NULL;
+        filenameType = FILENAME_TYPE_DEFAULT;
     }
 
     Loc(const char *filename, unsigned linnum, unsigned charnum);

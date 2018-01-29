@@ -375,14 +375,25 @@ alias d_uns32 = uint32_t;
 alias d_int64 = int64_t;
 alias d_uns64 = uint64_t;
 
+enum FilenameType
+{
+    default_, fromPoundLine, mixin_
+}
+
 // file location
 struct Loc
 {
+    // Note: it is assumed that filename is always either absolute or
+    //       relative to CWD
     const(char)* filename;
+
     uint linnum;
     uint charnum;
 
+    FilenameType filenameType;
+
     static immutable Loc initial;       /// use for default initialization of const ref Loc's
+
 
 nothrow:
     extern (D) this(const(char)* filename, uint linnum, uint charnum)
@@ -390,6 +401,12 @@ nothrow:
         this.linnum = linnum;
         this.charnum = charnum;
         this.filename = filename;
+    }
+
+    void setFilename(const(char)* filename, FilenameType type)
+    {
+        this.filename = filename;
+        this.filenameType = type;
     }
 
     extern (C++) const(char)* toChars() const
@@ -427,6 +444,13 @@ nothrow:
     bool isValid() const pure
     {
         return filename !is null;
+    }
+
+    const(char)* toAbsolute() const
+    {
+        if (FileName.absolute(filename) || filenameType != FilenameType.default_)
+            return filename;
+        return FileName.toAbsolute(filename);
     }
 }
 
