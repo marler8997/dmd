@@ -298,6 +298,8 @@ struct DArray
 // file location
 struct Loc
 {
+    // Note: it is assumed that filename is always either absolute or
+    //       relative to CWD
     const char *filename;
     unsigned linnum;
     unsigned charnum;

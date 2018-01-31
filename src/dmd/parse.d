@@ -7270,11 +7270,11 @@ final class Parser(AST) : Lexer
             {
                 const(char)* srcfile = mod.srcfile.name.toChars();
                 const(char)* s;
-                if(loc.filename && !FileName.equals(loc.filename, srcfile)) {
-                    s = loc.filename;
-                } else {
+                if (loc.isValid())
+                    s = FileName.toAbsolute(loc.filename);
+                else
                     s = FileName.combine(mod.srcfilePath, srcfile);
-                }
+
                 e = new AST.StringExp(loc, cast(char*)s);
                 nextToken();
                 break;
