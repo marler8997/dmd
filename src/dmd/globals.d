@@ -182,6 +182,7 @@ struct Param
 
     bool doJsonGeneration;              // write JSON file
     const(char)* jsonfilename;          // write JSON file to jsonfilename
+    uint jsonQueryFlags;                // flags for JSON query
 
     uint debuglevel;                    // debug level
     Array!(const(char)*)* debugids;     // debug identifiers

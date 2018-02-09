@@ -797,19 +797,33 @@ public:
         objectEnd();
     }
 
+    private void generateModules(Modules* modules)
+    {
+        arrayStart();
+        if (modules)
+        {
+            foreach (m; *modules)
+            {
+                if (global.params.verbose)
+                    message("json gen %s", m.toChars());
+                m.accept(this);
+            }
+        }
+        arrayEnd();
+    }
+
     private void generateCompilerInfo()
     {
         objectStart();
-        property("kind", "compilerInfo");
         property("binary", global.params.argv0);
         property("version", global._version);
         propertyBool("supportsIncludeImports", true);
         objectEnd();
     }
+
     private void generateBuildInfo()
     {
         objectStart();
-        property("kind", "buildInfo");
         property("cwd", getcwd(null, 0));
         property("config", global.inifilename ? global.inifilename : null);
         if (global.params.lib) {
@@ -824,10 +838,10 @@ public:
         arrayEnd();
         objectEnd();
     }
+
     private void generateSemantics()
     {
         objectStart();
-        property("kind", "semantics");
         propertyStart("modules");
         arrayStart();
         foreach (m; Module.amodules)
@@ -857,17 +871,178 @@ public:
 extern (C++) void json_generate(OutBuffer* buf, Modules* modules)
 {
     scope ToJsonVisitor json = new ToJsonVisitor(buf);
-    json.arrayStart();
-    json.generateCompilerInfo();
-    json.generateBuildInfo();
-    for (size_t i = 0; i < modules.dim; i++)
+
+    if (global.params.jsonQueryFlags == 0)
     {
-        Module m = (*modules)[i];
-        if (global.params.verbose)
-            message("json gen %s", m.toChars());
-        m.accept(json);
+        // Generate the original "non-query format, which is just an array
+        // of modules representing their syntax.
+        json.generateModules(modules);
+        json.removeComma();
     }
-    json.generateSemantics();
-    json.arrayEnd();
-    json.removeComma();
+    else
+    {
+        // Generate the "query format" which is an object where each
+        // output option is its own field.
+
+        json.objectStart();
+        if (global.params.jsonQueryFlags & JsonQueryFlags.compilerInfo)
+        {
+            json.propertyStart("compilerInfo");
+            json.generateCompilerInfo();
+        }
+        if (global.params.jsonQueryFlags & JsonQueryFlags.buildInfo)
+        {
+            json.propertyStart("buildInfo");
+            json.generateBuildInfo();
+        }
+        if (global.params.jsonQueryFlags & JsonQueryFlags.modules)
+        {
+            json.propertyStart("modules");
+            json.generateModules(modules);
+        }
+        if (global.params.jsonQueryFlags & JsonQueryFlags.semantics)
+        {
+            json.propertyStart("semantics");
+            json.generateSemantics();
+        }
+        json.objectEnd();
+    }
+}
+
+/**
+Each flag represents a field that can be included in the JSON output.
+*/
+private enum JsonQueryFlags
+{
+    compilerInfo = 0x01,
+    buildInfo    = 0x02,
+    modules      = 0x04,
+    semantics    = 0x08,
+}
+private enum jsonFieldNames = () {
+    string s;
+    string prefix = "";
+    foreach (enumName; __traits(allMembers, JsonQueryFlags))
+    {
+        s ~= prefix ~ enumName;
+        prefix = ", ";
+    }
+    s ~= "\0"; // make sure it is null-terminated
+    return s;
+}();
+
+/**
+Parses a JSON query into a set of flags.
+
+Returns: false on error, prints its own error messages.
+*/
+bool parseJsonQuery(const(char)* query, uint* outQueryFlags)
+{
+    auto parser = QueryParser(query);
+    uint flags = *outQueryFlags;
+    while (true)
+    {
+        parser.skipTrivial();
+        if (*parser.next == '\0')
+        {
+            break;
+        }
+        auto fieldName = parser.tryParseName();
+        if (fieldName is null)
+        {
+            error(Loc.initial, "invalid JSON query at offset %d: expected a name but got '%c' (0x%02x)",
+                parser.next - query, *parser.next, cast(ubyte)*parser.next);
+            return false; // fail
+        }
+        auto fieldFlag = tryParseJsonField(fieldName);
+        if (fieldFlag == 0)
+        {
+            error(Loc.initial, "invalid JSON query at offset %d: unknown field name `%.*s`, expected one of %s",
+                fieldName.ptr - query, fieldName.length, fieldName.ptr, jsonFieldNames.ptr);
+            break;
+        }
+        flags |= fieldFlag;
+    }
+    *outQueryFlags = flags;
+    return true; // success
+}
+
+/**
+Parse the given `fieldName` and return its corresponding JsonQueryFlags value.
+Returns 0 on error.
+*/
+private JsonQueryFlags tryParseJsonField(const(char)[] fieldName)
+{
+    foreach (flagName; __traits(allMembers, JsonQueryFlags))
+    {
+        if (fieldName == flagName)
+            return __traits(getMember, JsonQueryFlags, flagName);
+    }
+    return cast(JsonQueryFlags)0;
+}
+
+
+/**
+Implements parse logic for a JSON query.
+
+Based on the GraphQL spec.  It implements a very small subset of GraphQL
+which leaves the option open to add extra features from GraphQL if they
+are deemed useful.
+*/
+struct QueryParser
+{
+    const(char)* next;
+
+    /**
+    Skips trivial text (i.e. whitespace/commas)
+
+    Note: it skips the whitespace characters defined in GraphQL and also commas as specified by GraphQL.
+    */
+    void skipTrivial()
+    {
+        for (;; next++)
+        {
+            auto c = *next;
+            if (c != ',' && c != ' ' && c != ',' && c != '\t' && c != '\n' && c != '\r')
+                return;
+        }
+    }
+    /**
+    Attempts to parse next as a name.
+
+    Returns: a string on success, null if next is not a name
+    */
+    auto tryParseName()
+    {
+        if (!isNameStart(*next))
+            return null;
+        for (auto start = next;;)
+        {
+            next++;
+            if (!isNameChar(*next))
+                return start[0 .. next - start];
+        }
+    }
+
+    /**
+    Returns true if `c` is a valid character for the start of a name.
+
+    NOTE: based on the GrahpQL spec.
+    */
+    static bool isNameStart(dchar c)
+    {
+        if (c >= 'a') return c <= 'z';
+        return (c >= 'A') && (c <= 'Z' || c == '_');
+    }
+    /**
+    Returns true if `c` is a valid character for a name.
+
+    NOTE: based on the GrahpQL spec.
+    */
+    static bool isNameChar(dchar c)
+    {
+        if (c >= 'a') return c <= 'z';
+        if (c >= 'A') return c <= 'Z' || c == '_';
+        return c >= '0' && c <= '9';
+    }
 }

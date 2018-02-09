@@ -1,0 +1,45 @@
+Made more information available to be output in the JSON file and added the `-Xq=...` option to specify which fields to include.
+
+More information was made available to the JSON file.  This information can be requested with a "query" containing a list of the desired fields.  The new fields are "compilerInfo", "buildInfo", "modules" and "semantics".  A query is provided using the `-Xq=...` option, i.e.
+
+$(CONSOLE dmd -Xq=compilerInfo,buildInfo,semantics,modules)
+
+will generate a JSON file with the following:
+---
+{
+  "compilerInfo" : {
+    "binary" : "<filename-of-compiler-binary>",
+    "version" : "<compiler-version>",
+    "supportsIncludeImports" : true,
+  },
+  "buildInfo" : {
+    "config" : "<config-filename>",
+    "cwd" : "<cwd-during-build>",
+    "importParths" : [
+      "<import-path1>",
+      "<import-path2>",
+      // ...
+    ]
+  },
+  "semantics" : {
+    "modules" : [
+      {
+        "name" : "<module-name>",
+        "file" : "<module-filename>",
+        "isRoot" : true|false
+      },
+      // more module objects...
+    ]
+  },
+  "modules" : [
+    // an array of the syntax data for all the modules,
+    // this is the same array that would be generated
+    // for a JSON file with no query.
+  ]
+}
+---
+If JSON is generated without a query, then the old format is used, which is an array of module objects. This array of module objects is also the same array that would be generated in the new `modules` field with `-Xq=modules`.
+
+Also note that the compiler can now be invoked with no source files as long as a JSON query is provided, i.e.
+
+$(CONSOLE dmd -Xq=compilerInfo)
