@@ -31,6 +31,7 @@ import dmd.globals;
 import dmd.id;
 import dmd.identifier;
 import dmd.parse;
+import dmd.root.array;
 import dmd.root.file;
 import dmd.root.filename;
 import dmd.root.outbuffer;
@@ -280,6 +281,45 @@ extern (C++) class Package : ScopeDsymbol
     }
 }
 
+extern (C++) struct ImportName
+{
+    Identifiers* packages;
+    Identifier ident;
+    bool isNull() const { return ident is null; }
+    bool opEquals(const ImportName right) const
+    {
+        return this.ident == right.ident &&
+            packages.opEquals(right.packages);
+    }
+    bool matchesModuleName(const(Module) mod)
+    {
+        if (mod.md is null)
+            return ident == mod.ident;
+        return ident.equals(cast()mod.md.id) &&
+            packages.opEquals(mod.md.packages);
+    }
+    extern (C++) const(char)* toChars()
+    {
+        if (!ident || ident.toChars() == null)
+        {
+            return "<no-name>".ptr;
+        }
+
+        OutBuffer buf;
+        if (packages && packages.dim)
+        {
+            for (size_t i = 0; i < packages.dim; i++)
+            {
+                Identifier pid = (*packages)[i];
+                buf.writestring(pid.toChars());
+                buf.writeByte('.');
+            }
+        }
+        buf.writestring(ident.toChars());
+        return buf.extractString();
+    }
+}
+
 /***********************************************************
  */
 extern (C++) final class Module : Package
@@ -306,6 +346,8 @@ extern (C++) final class Module : Package
     extern (C++) static __gshared AggregateDeclaration moduleinfo;
 
     const(char)* arg;           // original argument name
+    ImportName importName;      // qualified name used to import the module this wil either
+                                // correlate with the module name or the filename
     ModuleDeclaration* md;      // if !=null, the contents of the ModuleDeclaration declaration
     File* srcfile;              // input source file
     File* objfile;              // output .obj file
@@ -427,15 +469,15 @@ extern (C++) final class Module : Package
         return new Module(filename, ident, doDocComment, doHdrGen);
     }
 
-    static Module load(Loc loc, Identifiers* packages, Identifier ident)
+    static Module load(Loc loc, ImportName importName)//Identifiers* packages, Identifier ident)
     {
         //printf("Module::load(ident = '%s')\n", ident.toChars());
         // Build module filename by turning:
         //  foo.bar.baz
         // into:
         //  foo\bar\baz
-        auto filename = ident.toChars();
-        if (packages && packages.dim)
+        auto filename = importName.ident.toChars();
+        if (importName.packages && importName.packages.dim)
         {
             OutBuffer buf;
             OutBuffer dotmods;
@@ -467,9 +509,9 @@ extern (C++) final class Module : Package
                 dotmods.writeByte('.');
             }
 
-            for (size_t i = 0; i < packages.dim; i++)
+            for (size_t i = 0; i < importName.packages.dim; i++)
             {
-                Identifier pid = (*packages)[i];
+                Identifier pid = (*importName.packages)[i];
                 const p = pid.toChars();
                 buf.writestring(p);
                 if (msdim)
@@ -489,7 +531,8 @@ extern (C++) final class Module : Package
             buf.writeByte(0);
             filename = buf.extractData();
         }
-        auto m = new Module(filename, ident, 0, 0);
+        auto m = new Module(filename, importName.ident, 0, 0);
+        m.importName = importName;
         m.loc = loc;
         /* Look for the source file
          */
@@ -502,19 +545,40 @@ extern (C++) final class Module : Package
         if (global.params.verbose)
         {
             OutBuffer buf;
-            if (packages)
+            if (importName.packages)
             {
-                for (size_t i = 0; i < packages.dim; i++)
+                for (size_t i = 0; i < importName.packages.dim; i++)
                 {
-                    Identifier pid = (*packages)[i];
+                    Identifier pid = (*importName.packages)[i];
                     buf.writestring(pid.toChars());
                     buf.writeByte('.');
                 }
             }
-            buf.printf("%s\t(%s)", ident.toChars(), m.srcfile.toChars());
+            buf.printf("%s\t(%s)", importName.ident.toChars(), m.srcfile.toChars());
             message("import    %s", buf.peekString());
         }
-        m = m.parse();
+
+        {
+            auto originalModule = m;
+            m = m.parse();
+
+            // If module name differs from the import name, verify that nothing else
+            // has imported the new module name.  This is necessary to maintain
+            // module/import order invariance.
+            if (originalModule != m && !importName.matchesModuleName(m))
+            {
+                // check that no other module was imported using this name
+                foreach (existing; amodules)
+                {
+                    if (m.md.opEquals(existing.importName))
+                    {
+                        m.error(loc, "module file `%s` masquerading as module `%s` was imported with name `%s`, however, another module was imported using the same name",
+                            m.srcfile.name.toChars(), m.toChars(), importName.toChars());
+                        break;
+                    }
+                }
+            }
+        }
 
         // Call onImport here because if the module is going to be compiled then we
         // need to determine it early because it affects semantic analysis. This is
@@ -1358,6 +1422,11 @@ struct ModuleDeclaration
         this.isdeprecated = isdeprecated;
     }
 
+    bool opEquals(ref const(ImportName) importName) const
+    {
+        return this.id == importName.ident &&
+            packages.opEquals(importName.packages);
+    }
     extern (C++) const(char)* toChars()
     {
         OutBuffer buf;

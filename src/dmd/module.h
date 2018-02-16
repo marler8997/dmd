@@ -53,6 +53,13 @@ public:
     Module *isPackageMod();
 };
 
+struct ImportName
+{
+    Identifiers* packages;
+    Identifier ident;
+    extern (C++) const(char)* toChars();
+};
+
 class Module : public Package
 {
 public:
@@ -75,6 +82,8 @@ public:
 
 
     const char *arg;    // original argument name
+    ImportName importName; // qualified name used to import the module this wil either
+                           // correlate with the module name or the filename
     ModuleDeclaration *md; // if !NULL, the contents of the ModuleDeclaration declaration
     File *srcfile;      // input source file
     const char* srcfilePath; // the path prefix to the srcfile if it applies
@@ -121,9 +130,9 @@ public:
     size_t nameoffset;          // offset of module name from start of ModuleInfo
     size_t namelen;             // length of module name in characters
 
-    static Module* create(const char *arg, Identifier *ident, int doDocComment, int doHdrGen);
+    static Module* create(const char *arg, ImportName importName, Identifier *ident, int doDocComment, int doHdrGen);
 
-    static Module *load(Loc loc, Identifiers *packages, Identifier *ident);
+    static Module *load(Loc loc, ImportName importName);//Identifiers *packages, Identifier *ident);
 
     const char *kind() const;
     File *setOutfile(const char *name, const char *dir, const char *arg, const char *ext);

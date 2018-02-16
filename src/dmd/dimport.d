@@ -135,10 +135,22 @@ extern (C++) final class Import : Dsymbol
             }
         }
         Dsymbol s = dst.lookup(id);
+        auto importName = ImportName(packages, id);
         if (s)
         {
             if (s.isModule())
+            {
                 mod = cast(Module)s;
+                if (mod.importName.isNull)
+                {
+                    mod.importName = importName;
+                }
+                else if (mod.importName != importName && !importName.matchesModuleName(mod))
+                {
+                    .error(loc, "import `%s` matches module `%s` from file `%s` but is different from previous import `%s` at %s",
+                        importName.toChars(), mod.toChars(), mod.srcfile.name.toChars(), mod.importName.toChars(), mod.loc.toChars());
+                }
+            }
             else
             {
                 if (s.isAliasDeclaration())
@@ -149,7 +161,7 @@ extern (C++) final class Import : Dsymbol
                 {
                     if (p.isPkgMod == PKG.unknown)
                     {
-                        mod = Module.load(loc, packages, id);
+                        mod = Module.load(loc, importName);
                         if (!mod)
                             p.isPkgMod = PKG.package_;
                         else
@@ -182,7 +194,7 @@ extern (C++) final class Import : Dsymbol
         if (!mod)
         {
             // Load module
-            mod = Module.load(loc, packages, id);
+            mod = Module.load(loc, importName);
             if (mod)
             {
                 // id may be different from mod.ident, if so then insert alias
