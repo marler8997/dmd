@@ -890,3 +890,24 @@ version(Windows)
         return F(ret);
     }
 }
+
+//private
+
+
+NormalizedFilename normalizeFilename(const(char)* filename, size_t length)
+{
+
+}
+
+/**
+A normalized filename contains no '.' or '..' names.
+On windows, it replaces forward slashes '/' with back slashes '\'.
+*/
+struct NormalizedFilename
+{
+
+}
+struct FilenameRange
+{
+
+}
