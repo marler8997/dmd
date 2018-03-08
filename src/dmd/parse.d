@@ -7312,6 +7312,7 @@ final class Parser(AST) : Lexer
                 auto s = token.ustring;
                 auto len = token.len;
                 auto postfix = token.postfix;
+                auto interpolate = token.interpolate;
                 while (1)
                 {
                     const prev = token;
@@ -7323,6 +7324,11 @@ final class Parser(AST) : Lexer
                             if (token.postfix != postfix)
                                 error("mismatched string literal postfixes `'%c'` and `'%c'`", postfix, token.postfix);
                             postfix = token.postfix;
+                        }
+                        if (interpolate != token.interpolate)
+                        {
+                            error("cannot concatenate interpolated strings with non-interpolated strings");
+                            interpolate = true;
                         }
 
                         deprecation("Implicit string concatenation is deprecated, use %s ~ %s instead",
@@ -7339,7 +7345,10 @@ final class Parser(AST) : Lexer
                     else
                         break;
                 }
-                e = new AST.StringExp(loc, cast(char*)s, len, postfix);
+                if (interpolate)
+                    e = new AST.TupleExp(loc, parseInterpolatedString(loc, s, len, postfix));
+                else
+                    e = new AST.StringExp(loc, cast(char*)s, len, postfix);
                 break;
             }
         case TOK.void_:
@@ -8559,6 +8568,102 @@ final class Parser(AST) : Lexer
             s.addComment(combineComments(blockComment, token.lineComment, true));
             token.lineComment = null;
         }
+    }
+
+    /**
+    Parse the given interpolated string `str` into an array of expressions.
+
+    Params:
+        loc = the location of the interpolated string
+        str = the interpolated string to parse
+        len = the length of the interpolated string
+        postfix = the interpolated string postix, i.e 'c', 'w' or 'd'
+
+    Returns:
+        An array of expressions representing the interpolated string.
+    */
+    AST.Expressions* parseInterpolatedString(ref const(Loc) loc, const(char)* str, uint len, ubyte postfix)
+    {
+        //printf("parseInterpolatedString '%.*s'\n", len, str);
+        auto parts = new AST.Expressions();
+
+        auto mark = 0;
+        auto next = 0;
+        void addMarkToNext()
+        {
+            if (next > mark)
+                parts.push(new AST.StringExp(loc, cast(char*)str + mark, next - mark, postfix));
+        }
+    MainLoop:
+        for(; next < len;)
+        {
+            //printf("[DEBUG] str[%d] = '%c'\n", next, str[next]);
+            if (str[next] != '$')
+            {
+                next++;
+            }
+            else
+            {
+                addMarkToNext();
+                if (next + 1 >= len)
+                {
+                    error("unfinished interpolated string expression '$'");
+                    mark = next;
+                    break;
+                }
+                if (str[next + 1] == '(')
+                {
+                    next += 2;
+                    mark = next;
+                    for(uint depth = 1;; next++)
+                    {
+                        if (next >= len)
+                        {
+                            error("unfinished interpolated string expression '$(...)'");
+                            mark = next;
+                            break MainLoop;
+                        }
+                        auto c = str[next];
+                        if (c == ')')
+                        {
+                            depth--;
+                            if (depth == 0)
+                                break;
+                        }
+                        else if (c == '(')
+                        {
+                            depth++;
+                        }
+                    }
+                    {
+                        auto expr = str[mark .. next];
+                        printf("[DEBUG] parsing the expression '%.*s'\n", expr.length, expr.ptr);
+                        scope tempParser = new Parser!AST(/*loc, */mod, expr, false);
+                        // TODO: parser is not handling this use case:
+                        // i"$(var)'"
+                        // Error: unterminated character constant
+                        tempParser.scanloc = loc;
+                        tempParser.nextToken();
+                        auto result = tempParser.parseExpression();
+                        printf("[DEBUG] parsed to '%s'\n", result.toChars());
+                        if (tempParser.token.value != TOK.rightParentheses)
+                        {
+                            error("invalid expression '%.*s' inside interpolated string", expr.length, expr.ptr);
+                        }
+                        parts.push(result);
+                    }
+                    next++;
+                    mark = next;
+                }
+                else
+                {
+                    assert(0, "not implemented");
+                }
+            }
+        }
+        addMarkToNext();
+
+        return parts;
     }
 }
 

@@ -212,6 +212,7 @@ struct Token
         {   utf8_t *ustring;     // UTF8 string
             unsigned len;
             unsigned char postfix;      // 'c', 'w', 'd'
+            bool interpolate;
         };
 
         Identifier *ident;

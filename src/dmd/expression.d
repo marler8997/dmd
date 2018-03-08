@@ -3004,6 +3004,7 @@ extern (C++) final class StringExp : Expression
     ubyte sz = 1;       // 1: char, 2: wchar, 4: dchar
     ubyte committed;    // !=0 if type is committed
     char postfix = 0;   // 'c', 'w', 'd'
+    bool interpolate = false; // true if prefixed with 'i'
     OwnedBy ownedByCtfe = OwnedBy.code;
 
     extern (D) this(const ref Loc loc, char* string)
@@ -3022,12 +3023,13 @@ extern (C++) final class StringExp : Expression
         this.sz = 1;                    // work around LDC bug #1286
     }
 
-    extern (D) this(const ref Loc loc, void* string, size_t len, char postfix)
+    extern (D) this(const ref Loc loc, void* string, size_t len, char postfix, bool interpolate = false)
     {
         super(loc, TOK.string_, __traits(classInstanceSize, StringExp));
         this.string = cast(char*)string;
         this.len = len;
         this.postfix = postfix;
+        this.interpolate = interpolate;
         this.sz = 1;                    // work around LDC bug #1286
     }
 

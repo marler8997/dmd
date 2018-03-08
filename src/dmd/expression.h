@@ -346,10 +346,11 @@ public:
     unsigned char sz;   // 1: char, 2: wchar, 4: dchar
     unsigned char committed;    // !=0 if type is committed
     utf8_t postfix;      // 'c', 'w', 'd'
+    bool interpolate;   // true if prefixed with 'i'
     OwnedBy ownedByCtfe;
 
     static StringExp *create(Loc loc, char *s);
-    static StringExp *create(Loc loc, void *s, size_t len);
+    static StringExp *create(Loc loc, void *s, size_t len, bool interpolate = false);
     bool equals(RootObject *o);
     StringExp *toStringExp();
     StringExp *toUTF8(Scope *sc);

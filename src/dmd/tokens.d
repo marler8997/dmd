@@ -455,6 +455,7 @@ extern (C++) struct Token
             const(char)* ustring; // UTF8 string
             uint len;
             ubyte postfix; // 'c', 'w', 'd'
+            bool interpolate;
         }
 
         Identifier ident;

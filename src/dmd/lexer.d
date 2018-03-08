@@ -308,6 +308,7 @@ class Lexer
         Loc startLoc;
         t.blockComment = null;
         t.lineComment = null;
+        bool interpolate = false;
 
         while (1)
         {
@@ -374,7 +375,8 @@ class Lexer
                 p++;
                 goto case '`';
             case '`':
-                t.value = wysiwygStringConstant(t, *p);
+                t.value = wysiwygStringConstant(t, p[0]);
+                t.interpolate = interpolate;
                 return;
             case 'x':
                 if (p[1] != '"')
@@ -388,19 +390,62 @@ class Lexer
                 {
                     p++;
                     t.value = delimitedStringConstant(t);
+                    t.interpolate = interpolate;
                     return;
                 }
                 else if (p[1] == '{')
                 {
                     p++;
                     t.value = tokenStringConstant(t);
+                    t.interpolate = interpolate;
                     return;
                 }
                 else
                     goto case_ident;
             case '"':
                 t.value = escapeStringConstant(t);
+                t.interpolate = interpolate;
                 return;
+            case 'i':
+                if (p[1] == 'r')
+                {
+                    if (p[2] == '"')
+                    {
+                        p += 2;
+                        interpolate = true;
+                        goto case '`';
+                    }
+                }
+                else if (p[1] == '`')
+                {
+                    p++;
+                    interpolate = true;
+                    goto case '`';
+                }
+                else if (p[1] == '"')
+                {
+                    p++;
+                    interpolate = true;
+                    goto case '"';
+                }
+                else if (p[1] == 'q')
+                {
+                    if (p[2] == '"')
+                    {
+                        p += 2;
+                        t.value = delimitedStringConstant(t);
+                        t.interpolate = true;
+                        return;
+                    }
+                    else if (p[2] == '{')
+                    {
+                        p += 2;
+                        t.value = tokenStringConstant(t);
+                        t.interpolate = true;
+                        return;
+                    }
+                }
+                goto case_ident;
             case 'a':
             case 'b':
             case 'c':
@@ -409,7 +454,6 @@ class Lexer
             case 'f':
             case 'g':
             case 'h':
-            case 'i':
             case 'j':
             case 'k':
             case 'l':
@@ -513,6 +557,7 @@ class Lexer
                         Lstr:
                             t.value = TOK.string_;
                             t.postfix = 0;
+                            t.interpolate = false;
                             t.len = cast(uint)strlen(t.ustring);
                         }
                         else if (id == Id.VERSIONX)

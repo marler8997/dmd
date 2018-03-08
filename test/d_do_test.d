@@ -497,8 +497,7 @@ string envGetRequired(in char[] name)
     auto value = environment.get(name);
     if(value is null)
     {
-        writefln("Error: missing environment variable '%s', was this called this through the Makefile?",
-            name);
+        writeln(i"Error: missing environment variable '$(name)', was this called this through the Makefile?");
         throw new SilentQuit();
     }
     return value;
@@ -688,13 +687,13 @@ int tryMain(string[] args)
                 string objfile = output_dir ~ envData.sep ~ test_name ~ "_" ~ to!string(permuteIndex) ~ envData.obj;
                 toCleanup ~= objfile;
 
-                string command = format("%s -conf= -m%s -I%s %s %s -od%s -of%s %s %s%s %s", envData.dmd, envData.model, input_dir,
-                        reqArgs, permutedArgs, output_dir,
-                        (testArgs.mode == TestMode.RUN || testArgs.link ? test_app_dmd : objfile),
-                        argSet,
-                        (testArgs.mode == TestMode.RUN || testArgs.link ? "" : "-c "),
-                        join(testArgs.sources, " "),
-                        (autoCompileImports ? "-i" : join(testArgs.compiledImports, " ")));
+                string command = text(
+                    i"$(envData.dmd) -conf= -m$(envData.model) -I$(input_dir) $(reqArgs) ",
+                    i"$(permutedArgs) -od$(output_dir) -of",
+                    (testArgs.mode == TestMode.RUN || testArgs.link) ? test_app_dmd : objfile,
+                    i` $(argSet) $(testArgs.mode == TestMode.RUN || testArgs.link ? "" : "-c ") `,
+                    join(testArgs.sources, " "), " ",
+                    (autoCompileImports ? "-i" : join(testArgs.compiledImports, " ")));
                 version(Windows) command ~= " -map nul.map";
 
                 compile_output = execute(fThisRun, command, testArgs.mode != TestMode.FAIL_COMPILE, result_path);
@@ -706,8 +705,9 @@ int tryMain(string[] args)
                     string newo= result_path ~ replace(replace(filename, ".d", envData.obj), envData.sep~"imports"~envData.sep, envData.sep);
                     toCleanup ~= newo;
 
-                    string command = format("%s -conf= -m%s -I%s %s %s -od%s -c %s %s", envData.dmd, envData.model, input_dir,
-                        reqArgs, permutedArgs, output_dir, argSet, filename);
+                    string command = text(
+                        i"$(envData.dmd) -conf= -m$(envData.model) -I$(input_dir) $(reqArgs) ",
+                        i"$(permutedArgs) -od$(output_dir) -c $(argSet) $(filename)");
                     compile_output ~= execute(fThisRun, command, testArgs.mode != TestMode.FAIL_COMPILE, result_path);
                 }
 

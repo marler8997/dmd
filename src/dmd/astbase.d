@@ -4470,6 +4470,7 @@ struct ASTBase
         size_t len;         // number of code units
         ubyte sz = 1;       // 1: char, 2: wchar, 4: dchar
         char postfix = 0;   // 'c', 'w', 'd'
+        bool interpolate = false; // true if prefixed with 'i'
 
         extern (D) this(Loc loc, char* string)
         {
@@ -4487,12 +4488,13 @@ struct ASTBase
             this.sz = 1;                    // work around LDC bug #1286
         }
 
-        extern (D) this(Loc loc, void* string, size_t len, char postfix)
+        extern (D) this(Loc loc, void* string, size_t len, char postfix, bool interpolate = false)
         {
             super(loc, TOK.string_, __traits(classInstanceSize, StringExp));
             this.string = cast(char*)string;
             this.len = len;
             this.postfix = postfix;
+            this.interpolate = interpolate;
             this.sz = 1;                    // work around LDC bug #1286
         }
 
