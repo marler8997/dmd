@@ -194,6 +194,8 @@ unittest
     }
 }
 
+enum Interpolate { no, yes }
+
 /**
 Handles error messages
 */
@@ -424,6 +426,45 @@ class Lexer : ErrorHandler
             case '"':
                 escapeStringConstant(t);
                 return;
+            case 'i':
+                if (global.params.interpolateStrings)
+                {
+                    if (p[1] == 'r')
+                    {
+                        if (p[2] == '"')
+                        {
+                            p += 2;
+                            t.value = wysiwygStringConstant(t, *p, Interpolate.yes);
+                            goto case '`';
+                        }
+                    }
+                    else if (p[1] == '`')
+                    {
+                        p++;
+                        goto case '`';
+                    }
+                    else if (p[1] == '"')
+                    {
+                        p++;
+                        goto case '"';
+                    }
+                    else if (p[1] == 'q')
+                    {
+                        if (p[2] == '"')
+                        {
+                            p += 2;
+                            t.value = delimitedStringConstant(t);
+                            return;
+                        }
+                        else if (p[2] == '{')
+                        {
+                            p += 2;
+                            t.value = tokenStringConstant(t);
+                            return;
+                        }
+                    }
+                }
+                goto case_ident;
             case 'a':
             case 'b':
             case 'c':
@@ -432,7 +473,6 @@ class Lexer : ErrorHandler
             case 'f':
             case 'g':
             case 'h':
-            case 'i':
             case 'j':
             case 'k':
             case 'l':

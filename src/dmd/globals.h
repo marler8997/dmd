@@ -129,6 +129,7 @@ struct Param
                         // https://issues.dlang.org/show_bug.cgi?id=16997
     bool vsafe;         // use enhanced @safe checking
     bool ehnogc;        // use @nogc exception handling
+    bool interpolateStrings;// Enable interpolated string support via the 'i' prefix on string literals
     bool showGaggedErrors;  // print gagged errors anyway
     bool manual;            // open browser on compiler manual
     bool usage;             // print usage and exit

@@ -17,6 +17,7 @@ import core.stdc.stdio;
 import core.stdc.string;
 import dmd.globals;
 import dmd.identifier;
+import dmd.root.array;
 import dmd.root.ctfloat;
 import dmd.root.outbuffer;
 import dmd.root.rmem;
@@ -175,6 +176,7 @@ enum TOK : int
     identifier,
     string_,
     hexadecimalString,
+    interpolatedString,
     this_,
     super_,
     halt,
@@ -431,6 +433,14 @@ private immutable TOK[] keywords =
     TOK.immutable_,
 ];
 
+struct InterpolatedStringPart
+{
+    Loc loc;
+    const(char)* ustring; // UTF8 string
+    uint ustringLength;
+    bool isExpression;
+}
+
 /***********************************************************
  */
 extern (C++) struct Token
@@ -456,6 +466,7 @@ extern (C++) struct Token
             uint len;
             ubyte postfix; // 'c', 'w', 'd'
         }
+        Array!(InterpolatedStringPart)* interpolatedStringParts;
 
         Identifier ident;
     }
@@ -672,6 +683,7 @@ extern (C++) struct Token
         TOK.assocArrayLiteral: "assocarrayliteral",
         TOK.structLiteral: "structliteral",
         TOK.string_: "string",
+        TOK.interpolatedString : "interpolatedstring",
         TOK.dSymbol: "symbol",
         TOK.tuple: "tuple",
         TOK.declaration: "declaration",
@@ -906,6 +918,10 @@ extern (C++) struct Token
                 p = buf.extractData();
                 break;
             }
+        case TOK.interpolatedString:
+            // TODO: implement this
+            p = "[interpolated-string]".ptr;
+            break;
         case TOK.identifier:
         case TOK.enum_:
         case TOK.struct_:

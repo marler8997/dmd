@@ -158,6 +158,7 @@ struct Param
      * before becoming default.
      */
 
+    bool interpolateStrings;// Enable interpolated string support via the 'i' prefix on string literals
     bool showGaggedErrors;  // print gagged errors anyway
     bool manual;            // open browser on compiler manual
     bool usage;             // print usage and exit
