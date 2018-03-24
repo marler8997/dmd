@@ -609,6 +609,8 @@ dmd -cov -unittest myprog.d
             "fix integral promotions for unary + - ~ operators"),
         Transition(null, "tls", "vtls",
             "list all variables going into thread local storage"),
+        Transition(null, "interpolate", "interpolateStrings",
+            "enable interpolated string support via the 'i' prefix on string literals"),
     ];
 }
 
