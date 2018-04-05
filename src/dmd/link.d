@@ -32,6 +32,23 @@ version (Windows) extern (C) int putenv(const char*);
 version (Windows) extern (C) int spawnlp(int, const char*, const char*, const char*, const char*);
 version (Windows) extern (C) int spawnl(int, const char*, const char*, const char*, const char*);
 version (Windows) extern (C) int spawnv(int, const char*, const char**);
+
+string dgetenv(const(char)* name)
+{
+    auto result = getenv(name);
+    return cast(string)result[0 .. strlen(result)];
+}
+int dputenv(const char[] name, const char[] value)
+{
+    auto fullLength = name.length + 1 + value.length;
+    auto buffer = cast(char*)alloca(fullLength + 1);
+    buffer[0               .. name.length] = name[];
+    buffer[name.length]                    = '=';
+    buffer[name.length + 1 .. fullLength ] = value[];
+    buffer[fullLength] = '\0';
+    return putenv(buffer);
+}
+
 version (CRuntime_Microsoft)
 {
   // until the new windows bindings are available when building dmd.
@@ -151,6 +168,37 @@ version (Posix)
     }
 }
 
+/**
+Use to restore an environment variable when this structure goes out of scope.
+*/
+struct EnvRestore(string varName)
+{
+    private string savedValue;
+    private bool restore;
+
+    /**
+    Access the saved environment variable value.
+    */
+    string getSavedValue() const { return savedValue; }
+
+    /**
+    Call before the overriding the environment variable to save and restore it later.
+    */
+    void saveToRestoreLater()
+    {
+        savedValue = dgetenv(varName);
+        restore = true;
+    }
+
+    ~this()
+    {
+        if (restore)
+        {
+            dputenv(varName, savedValue);
+        }
+    }
+}
+
 /*****************************
  * Run the linker.  Return status of execution.
  */
@@ -264,8 +312,9 @@ public int runLINK()
             const(char)* linkcmd = getenv(global.params.is64bit ? "LINKCMD64" : "LINKCMD");
             if (!linkcmd)
                 linkcmd = getenv("LINKCMD"); // backward compatible
+            auto restorePATH = EnvRestore!"PATH"();
             if (!linkcmd)
-                linkcmd = vsopt.linkerPath(global.params.is64bit);
+                linkcmd = vsopt.linkerPath(global.params.is64bit, restorePATH);
 
             int status = executecmd(linkcmd, p);
             if (lnkfilename)
@@ -738,15 +787,16 @@ version (Windows)
     {
         int status;
         size_t len;
+        auto restore_CMDLINE = EnvRestore!"_CMDLINE"();
+
         if (global.params.verbose)
             message("%s %s", cmd, args);
         if (!global.params.mscoff)
         {
             if ((len = strlen(args)) > 255)
             {
-                char* q = cast(char*)alloca(8 + len + 1);
-                sprintf(q, "_CMDLINE=%s", args);
-                status = putenv(q);
+                restore_CMDLINE.saveToRestoreLater();
+                status = dputenv("_CMDLINE", args[0 .. len]);
                 if (status == 0)
                 {
                     args = "@_CMDLINE";
@@ -1018,7 +1068,7 @@ version (Windows)
          * Returns:
          *   absolute path to link.exe, just "link.exe" if not found
          */
-        const(char)* linkerPath(bool x64)
+        const(char)* linkerPath(bool x64, ref EnvRestore!"PATH" restorePATH)
         {
             const(char)* addpath;
             if (auto p = getVCBinDir(x64, addpath))
@@ -1030,15 +1080,15 @@ version (Windows)
                 {
                     // debug info needs DLLs from $(VSInstallDir)\Common7\IDE for most linker versions
                     //  so prepend it too the PATH environment variable
-                    const char* path = getenv("PATH");
-                    const pathlen = strlen(path);
+                    restorePATH.saveToRestoreLater();
+                    const char[] path = restorePATH.getSavedValue;
                     const addpathlen = strlen(addpath);
 
-                    char* npath = cast(char*)mem.xmalloc(5 + pathlen + 1 + addpathlen + 1);
+                    char* npath = cast(char*)mem.xmalloc(5 + path.length + 1 + addpathlen + 1);
                     memcpy(npath, "PATH=".ptr, 5);
                     memcpy(npath + 5, addpath, addpathlen);
                     npath[5 + addpathlen] = ';';
-                    memcpy(npath + 5 + addpathlen + 1, path, pathlen + 1);
+                    memcpy(npath + 5 + addpathlen + 1, path.ptr, path.length + 1);
                     putenv(npath);
                 }
                 return cmdbuf.extractString();
