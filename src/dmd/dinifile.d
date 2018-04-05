@@ -25,7 +25,6 @@ import dmd.root.outbuffer;
 import dmd.root.port;
 import dmd.root.stringtable;
 
-version (Windows) extern (C) int putenv(const char*);
 private enum LOG = false;
 
 /*****************************
@@ -146,14 +145,23 @@ void updateRealEnvironment(StringTable* environment)
         if (!value) // deleted?
             return 0;
         const valuelen = strlen(value);
+        //printf("envput('%s=%s')\n", name, value);
+        if (!global.tryPutenv(name[0 .. namelen], value[0 .. valuelen]))
+        {
+            assert(0, "putenv failed");
+        }
+        /*
         auto s = cast(char*)malloc(namelen + 1 + valuelen + 1);
         assert(s);
         memcpy(s, name, namelen);
         s[namelen] = '=';
         memcpy(s + namelen + 1, value, valuelen);
         s[namelen + 1 + valuelen] = 0;
+        import core.stdc.stdio;
+        global.params.dputenv(s);
         //printf("envput('%s')\n", s);
         putenv(s);
+        */
         return 0; // do all of them
     }
 

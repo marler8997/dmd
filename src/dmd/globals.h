@@ -59,6 +59,14 @@ enum CPU
     native              // the machine the compiler is being run on
 };
 
+struct EnvironmentVariable
+{
+    const char *name;
+    unsigned nameLength;
+    const char *value;
+    unsigned valueLength;
+};
+
 // Put command line switches in here
 struct Param
 {
@@ -190,6 +198,7 @@ struct Param
 
     bool run;           // run resulting executable
     Strings runargs;    // arguments for executable
+    Array<EnvironmentVariable> envToRestoreBeforeRun;
 
     // Linker stuff
     Array<const char *> objfiles;

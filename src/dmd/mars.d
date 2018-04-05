@@ -266,6 +266,7 @@ private int tryMain(size_t argc, const(char)** argv)
     sections.push(envsection.ptr);
     parseConfFile(&environment, global.inifilename, inifilepath, inifile.len, inifile.buffer, &sections);
     getenv_setargv(readFromEnv(&environment, "DFLAGS"), &arguments);
+    // TODO: not sure why dmd is doing this
     updateRealEnvironment(&environment);
     environment.reset(1); // don't need environment cache any more
 

@@ -13,6 +13,8 @@
 module dmd.globals;
 
 import core.stdc.stdint;
+import core.stdc.string;
+import core.sys.posix.stdlib;
 import dmd.root.array;
 import dmd.root.filename;
 import dmd.root.outbuffer;
@@ -66,6 +68,20 @@ enum CPU
     // Special values that don't survive past the command line processing
     baseline,           // (default) the minimum capability CPU
     native              // the machine the compiler is being run on
+}
+
+/**
+Used to store an environment variable.
+*/
+extern (C++) struct EnvironmentVariable
+{
+    const(char)* name;
+    uint nameLength;
+    const(char)* value;
+    uint valueLength;
+
+    auto nameString() const { return name[0 .. nameLength]; }
+    auto valueString() const { return value[0 .. valueLength]; }
 }
 
 /**
@@ -219,6 +235,7 @@ struct Param
 
     bool run; // run resulting executable
     Strings runargs; // arguments for executable
+    Array!EnvironmentVariable envToRestoreBeforeRun;
 
     // Linker stuff
     Array!(const(char)*) objfiles;
@@ -400,6 +417,82 @@ struct Global
         }
         return cached;
     }
+
+    /**
+    Save the environment variable `name` so that it can be restored later.
+    Params:
+        name = the name of the environment variable to save, must be null-terminated
+    */
+    private void saveEnvForRun(zstring name)
+    {
+        foreach (env; params.envToRestoreBeforeRun)
+        {
+            if (env.nameString == name)
+            {
+                return; // already saved
+            }
+        }
+        auto value = dgetenv(name.ptr);
+        params.envToRestoreBeforeRun.push(EnvironmentVariable(
+            name.ptr, cast(uint)name.length,
+            value.ptr, cast(uint)value.length));
+    }
+
+    /**
+    Try to set an environment variable.
+    Params:
+        
+    Returns:
+        true on success, false on failure
+    */
+    bool trySetenv(zstring name, const(char)[] value)
+    in { assert(name.ptr[name.length] == '\0', "code bug"); } body
+    {
+        version (Windows) extern (C) int putenv(const char*);
+
+        auto fullLength = name.length + 1 + value.length;
+        auto buffer = cast(char*)alloca(fullLength + 1);
+        buffer[0               .. name.length] = name[];
+        buffer[name.length]                    = '=';
+        buffer[name.length + 1 .. fullLength ] = value[];
+        buffer[fullLength] = '\0';
+        if (putenv(buffer) != 0)
+            return false; // failure
+        return true; // success
+    }
+}
+
+/+
+/**
+A D string that is also null-terminated.
+*/
+struct zstring
+{
+    private string str;
+
+    string toString() const { return str; }
+    alias toString this;
+
+    this(string str)
+    in { assert(str.ptr[str.length] == '\0'); } body
+    {
+        this.str = str;
+    }
+
+    static zstring literal(string str)()
+    {
+        // string literals are always null-terminated
+        return zstring(str);
+    }
+}
++/
+
+string dgetenv(const(char)* name)
+{
+    auto value = getenv(name);
+    if (!value)
+        return null;
+    return (cast(immutable(char)*)value)[0 .. strlen(value)];
 }
 
 // Because int64_t and friends may be any integral type of the
@@ -515,3 +608,5 @@ enum PINLINE : int
 alias StorageClass = uinteger_t;
 
 extern (C++) __gshared Global global;
+
+
