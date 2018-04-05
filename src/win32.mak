@@ -168,7 +168,7 @@ LEXER_SRCS=$D/console.d $D/entity.d $D/errors.d $D/globals.d $D/id.d $D/identifi
 
 LEXER_ROOT=$(ROOT)/array.d $(ROOT)/ctfloat.d $(ROOT)/file.d $(ROOT)/filename.d \
 	$(ROOT)/outbuffer.d $(ROOT)/port.d $(ROOT)/rmem.d $(ROOT)/rootobject.d \
-	$(ROOT)/stringtable.d $(ROOT)/hash.d
+	$(ROOT)/stringtable.d $(ROOT)/hash.d $(ROOT)/sentinel.d
 
 PARSER_SRCS=$D/astbase.d $D/parsetimevisitor.d $D/parse.d $D/transitivevisitor.d $D/permissivevisitor.d $D/strictvisitor.d
 
@@ -204,7 +204,7 @@ GBACKOBJ= $G/go.obj $G/gdag.obj $G/gother.obj $G/gflow.obj $G/gloop.obj $G/var.o
 ROOT_SRCS=$(ROOT)/aav.d $(ROOT)/array.d $(ROOT)/ctfloat.d $(ROOT)/file.d \
 	$(ROOT)/filename.d $(ROOT)/man.d $(ROOT)/outbuffer.d $(ROOT)/port.d \
 	$(ROOT)/response.d $(ROOT)/rmem.d $(ROOT)/rootobject.d \
-	$(ROOT)/speller.d $(ROOT)/stringtable.d $(ROOT)/hash.d
+	$(ROOT)/speller.d $(ROOT)/stringtable.d $(ROOT)/hash.d $(ROOT)/sentinel.d
 
 # D front end
 SRCS = $D/aggregate.h $D/aliasthis.h $D/arraytypes.h	\
@@ -253,8 +253,8 @@ ROOTSRCC=$(ROOT)\newdelete.c
 ROOTSRCD=$(ROOT)\rmem.d $(ROOT)\stringtable.d $(ROOT)\hash.d $(ROOT)\man.d $(ROOT)\port.d \
 	$(ROOT)\response.d $(ROOT)\rootobject.d $(ROOT)\speller.d $(ROOT)\aav.d \
 	$(ROOT)\ctfloat.d $(ROOT)\longdouble.d $(ROOT)\outbuffer.d $(ROOT)\filename.d \
-	$(ROOT)\file.d $(ROOT)\array.d
-ROOTSRC= $(ROOT)\root.h $(ROOT)\stringtable.h \
+	$(ROOT)\file.d $(ROOT)\array.d $(ROOT)\sentinel.d
+ROOTSRC= $(ROOT)\root.h $(ROOT)\stringtable.h $(ROOT)\sentinel.h \
 	$(ROOT)\longdouble.h $(ROOT)\outbuffer.h $(ROOT)\object.h $(ROOT)\ctfloat.h \
 	$(ROOT)\filename.h $(ROOT)\file.h $(ROOT)\array.h $(ROOT)\rmem.h $(ROOTSRCC) \
 	$(ROOTSRCD)

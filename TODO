@@ -1,0 +1,3 @@
+Look for instances of strlen to see if they would benefit from SentinelArray.
+
+grep "strlen(" src/dmd/*.d

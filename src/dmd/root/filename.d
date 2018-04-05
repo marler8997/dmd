@@ -23,6 +23,7 @@ import dmd.root.file;
 import dmd.root.outbuffer;
 import dmd.root.rmem;
 import dmd.root.rootobject;
+import dmd.root.sentinel;
 
 nothrow
 {
@@ -124,11 +125,14 @@ nothrow:
      */
     extern (C++) static const(char)* ext(const(char)* str) pure
     {
-        size_t len = strlen(str);
-        const(char)* e = str + len;
+        return ext(str.assumeSentinel.walkToSentinelArray());
+    }
+    extern (C++) static cstring ext(SentinelArray!(const(char)) str) pure
+    {
+        cstring e = str.ptr + str.length;
         for (;;)
         {
-            switch (*e)
+            switch (e[0])
             {
             case '.':
                 return e + 1;
@@ -145,12 +149,12 @@ nothrow:
                     break;
                 }
             default:
-                if (e == str)
+                if (e == str.ptr)
                     break;
                 e--;
                 continue;
             }
-            return null;
+            return cstring.nullPtr;
         }
     }
 
@@ -765,6 +769,14 @@ nothrow:
     {
         return str;
     }
+
+/*
+    extern (C++) final SentinelArray!(const(char)) asString() const pure
+    {
+        // TODO: might be worth it to create this function
+        //       checkout how many times strlen is called on the return value of toChars
+    }
+*/
 }
 
 version(Windows)

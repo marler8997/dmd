@@ -15,6 +15,7 @@ module dmd.root.rootobject;
 import core.stdc.stdio;
 
 import dmd.root.outbuffer;
+import dmd.root.sentinel;
 
 /***********************************************************
  */
@@ -60,7 +61,12 @@ extern (C++) class RootObject
     {
         assert(0);
     }
-
+/*
+    SentinelArray!(const(char)) asString() const
+    {
+        assert(0);
+    }
+*/
     void toBuffer(OutBuffer* buf) nothrow pure @nogc @safe
     {
         assert(0);

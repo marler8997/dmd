@@ -46,6 +46,7 @@ import dmd.opover;
 import dmd.root.aav;
 import dmd.root.rmem;
 import dmd.root.rootobject;
+import dmd.root.sentinel;
 import dmd.root.speller;
 import dmd.statement;
 import dmd.tokens;
@@ -216,6 +217,12 @@ extern (C++) class Dsymbol : RootObject
     {
         return ident ? ident.toChars() : "__anonymous";
     }
+/*
+    override SentinelArray!(const(char)) asString() const
+    {
+        return ident ? ident.asString() : "__anonymous".assumeSentinel;
+    }
+    */
 
     // helper to print fully qualified (template) arguments
     const(char)* toPrettyCharsHelper()

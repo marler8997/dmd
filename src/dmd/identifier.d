@@ -19,6 +19,7 @@ import dmd.globals;
 import dmd.id;
 import dmd.root.outbuffer;
 import dmd.root.rootobject;
+import dmd.root.sentinel;
 import dmd.root.stringtable;
 import dmd.tokens;
 import dmd.utf;
@@ -55,6 +56,9 @@ public:
 
     override bool equals(RootObject o) const
     {
+        // would be faster to compare if o.asString returned a string
+        // since it could check the length first
+        //return this == o || asString() == o.asString();
         return this == o || strncmp(string, o.toChars(), len + 1) == 0;
     }
 
@@ -74,9 +78,9 @@ nothrow:
         return string;
     }
 
-    extern (D) final const(char)[] toString() const pure
+    extern (D) final SentinelArray!(const(char)) toString() const pure
     {
-        return string[0 .. len];
+        return string[0 .. len].assumeSentinel;
     }
 
     final int getValue() const pure

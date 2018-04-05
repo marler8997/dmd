@@ -277,6 +277,8 @@ struct OutBuffer
     {
         if (obj)
         {
+            // TODO: RootObject should probably have an asString instead
+            //       using that version would prevent an unnecessary strlen
             writestring(obj.toChars());
         }
     }

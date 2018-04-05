@@ -314,11 +314,11 @@ FRONT_SRCS=$(addsuffix .d, $(addprefix $D/,access aggregate aliasthis apply argt
 LEXER_SRCS=$(addsuffix .d, $(addprefix $D/, console entity errors globals id identifier lexer tokens utf))
 
 LEXER_ROOT=$(addsuffix .d, $(addprefix $(ROOT)/, array ctfloat file filename outbuffer port rmem \
-	rootobject stringtable hash))
+	rootobject stringtable hash sentinel))
 
 ROOT_SRCS = $(addsuffix .d,$(addprefix $(ROOT)/,aav array ctfloat file \
 	filename man outbuffer port response rmem rootobject speller \
-	longdouble stringtable hash))
+	longdouble stringtable hash sentinel))
 
 GLUE_OBJS =
 G_GLUE_OBJS = $(addprefix $G/, $(GLUE_OBJS))
@@ -420,7 +420,7 @@ SRC = $(addprefix $D/, aggregate.h aliasthis.h arraytypes.h	\
 
 ROOT_SRC = $(addprefix $(ROOT)/, array.h ctfloat.h file.h filename.h \
 	longdouble.h newdelete.c object.h outbuffer.h port.h \
-	rmem.h root.h stringtable.h)
+	rmem.h root.h stringtable.h sentinel.h)
 
 ######## Additional files
 
