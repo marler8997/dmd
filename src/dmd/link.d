@@ -28,7 +28,6 @@ import dmd.root.rmem;
 import dmd.utils;
 
 version (Posix) extern (C) int pipe(int*);
-version (Windows) extern (C) int putenv(const char*);
 version (Windows) extern (C) int spawnlp(int, const char*, const char*, const char*, const char*);
 version (Windows) extern (C) int spawnl(int, const char*, const char*, const char*, const char*);
 version (Windows) extern (C) int spawnv(int, const char*, const char**);
@@ -744,16 +743,12 @@ version (Windows)
         {
             if ((len = strlen(args)) > 255)
             {
-                char* q = cast(char*)alloca(8 + len + 1);
-                sprintf(q, "_CMDLINE=%s", args);
-                status = putenv(q);
-                if (status == 0)
-                {
+                if (global.putenvWithCache(EnvironmentVariable.alloc("_CMDLINE", args[0 .. len])))
                     args = "@_CMDLINE";
-                }
                 else
                 {
                     error(Loc.initial, "command line length of %d is too long", len);
+                    status = -1; // error
                 }
             }
         }
@@ -873,6 +868,7 @@ public int runProgram()
         argv.push(a);
     }
     argv.push(null);
+    global.restoreEnvBeforeRun();
     version (Windows)
     {
         const(char)* ex = FileName.name(global.params.exefile);
@@ -1034,12 +1030,14 @@ version (Windows)
                     const pathlen = strlen(path);
                     const addpathlen = strlen(addpath);
 
-                    char* npath = cast(char*)mem.xmalloc(5 + pathlen + 1 + addpathlen + 1);
+                    auto length = 5 + addpathlen + 1 + pathlen;
+                    char* npath = cast(char*)mem.xmalloc(length + 1);
                     memcpy(npath, "PATH=".ptr, 5);
                     memcpy(npath + 5, addpath, addpathlen);
                     npath[5 + addpathlen] = ';';
                     memcpy(npath + 5 + addpathlen + 1, path, pathlen + 1);
-                    putenv(npath);
+                    if (!global.putenvWithCache(EnvironmentVariable(npath, cast(uint)length, 4)))
+                        assert(0, "putenv failed");
                 }
                 return cmdbuf.extractString();
             }

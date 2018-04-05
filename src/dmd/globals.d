@@ -13,11 +13,16 @@
 module dmd.globals;
 
 import core.stdc.stdint;
+import core.stdc.string;
+import core.sys.posix.stdlib;
 import dmd.root.array;
 import dmd.root.filename;
 import dmd.root.outbuffer;
+import dmd.root.rmem;
 import dmd.compiler;
 import dmd.identifier;
+
+version (Windows) extern (C) int putenv(const char*);
 
 template xversion(string s)
 {
@@ -69,6 +74,75 @@ enum CPU
 }
 
 /**
+Used to store an environment variable including its value.
+*/
+extern (C++) struct EnvironmentVariable
+{
+    private const(char)* setString; /// null-terminated string of the form "VAR=VALUE"
+    private uint length;            /// length of setString
+    private uint equalsIndex;       /// index of '=' in setString
+
+    /**
+    Access the name of the environment variable as a D string.
+    */
+    extern (D) auto nameString() const { return setString[0 .. equalsIndex]; }
+
+    /**
+    Access the value of the environment variable as a D string.
+    */
+    extern (D) auto valueString() const { return setString[equalsIndex + 1 .. length]; }
+
+    /**
+    Put this environment variable in the current environment by calling `putenv`.
+    Note that this call gives ownership of the memory allocated for this variable
+    to the system, it must remain intact even after this call has returned. Also
+    note that this function does not cache the current value of the variable to be
+    restored laster like `global.putenvWithCache` would do.
+    Returns:
+        true on succes, false otherwise
+    */
+    extern (C++) private bool putenv() const
+    {
+        if (.putenv(cast(char*)setString) == 0)
+            return true; // success
+        else
+            return false; // fail
+    }
+
+    /**
+    Get current value of this environment variable from the system by calling `getenv`.
+    Returns:
+        the return value of `getenv`
+    */
+    extern (C++) private char* getenv() const
+    {
+        auto nameBuffer = cast(char*)alloca(equalsIndex + 1);
+        nameBuffer[0 .. equalsIndex] = setString[0 .. equalsIndex];
+        nameBuffer[equalsIndex] = '\0';
+        return .getenv(nameBuffer);
+    }
+
+    /**
+    Allocate and initialize a new environment variable that can be set to the current environment.
+    Params:
+        name = name of the environment variable
+        value = value of the environment variable
+    Returns:
+        a newly allocated environment variable
+    */
+    extern (D) static EnvironmentVariable alloc(const(char)[] name, const(char)[] value)
+    {
+        uint length = cast(uint)name.length + 1 + cast(uint)value.length;
+        auto setString = cast(char*)mem.xmalloc(length + 1);
+        setString[0 .. name.length] = name[];
+        setString[name.length] = '=';
+        setString[name.length + 1 .. length] = value[];
+        setString[length] = '\0';
+        return EnvironmentVariable(setString, length, cast(uint)name.length);
+    }
+}
+
+/**
 Each flag represents a field that can be included in the JSON output.
 
 NOTE: set type to uint so its size matches C++ unsigned type
@@ -85,6 +159,7 @@ enum JsonFieldFlags : uint
 // Put command line switches in here
 struct Param
 {
+    bool doneParsingCommandLine; // true when command line is fully parsed
     bool obj = true;        // write object file
     bool link = true;       // perform link
     bool dll;               // generate shared dynamic library
@@ -219,6 +294,7 @@ struct Param
 
     bool run; // run resulting executable
     Strings runargs; // arguments for executable
+    Array!EnvironmentVariable envToRestoreBeforeRun;
 
     // Linker stuff
     Array!(const(char)*) objfiles;
@@ -366,7 +442,7 @@ struct Global
     /**
     Returns: the version as the number that would be returned for __VERSION__
     */
-    extern(C++) uint versionNumber()
+    extern (C++) uint versionNumber()
     {
         import core.stdc.ctype;
         __gshared static uint cached = 0;
@@ -399,6 +475,61 @@ struct Global
             cached = major * 1000 + minor;
         }
         return cached;
+    }
+
+    /**
+    Save the environment variable `name` so that it can be restored later.
+    Params:
+        name = the name of the environment variable to save, must also be null-terminated
+    */
+    private void saveEnvForRun(EnvironmentVariable env)
+    {
+        if (params.doneParsingCommandLine && !params.run)
+            return; // no need to save command line
+
+        auto nameString = env.nameString;
+        foreach (var; params.envToRestoreBeforeRun)
+        {
+            if (var.nameString == nameString)
+            {
+                //printf("saveEnvForRun already saved %s\n", env.setString);
+                return; // already saved
+            }
+        }
+
+        auto value = env.getenv();
+        auto newEnv = EnvironmentVariable.alloc(nameString, value ? value[0 .. strlen(value)] : null);
+        //printf("saveEnvForRun %s\n", newEnv.setString);
+        params.envToRestoreBeforeRun.push(newEnv);
+    }
+
+    /**
+    Restore environment before running the compiled program.
+    */
+    extern (C++) void restoreEnvBeforeRun()
+    {
+        foreach (var; params.envToRestoreBeforeRun)
+        {
+            //printf("restoreEnvBeforeRun %s\n", var.setString);
+            if (!var.putenv())
+            {
+                assert(0, "putenv failed");
+            }
+        }
+    }
+
+    /**
+    Set an environment variable but save the original value so it can be restored
+    later if necessary.
+    Params:
+        env = the environment variable/value to set
+    Returns:
+        true on success, false on failure
+    */
+    extern (C++) bool putenvWithCache(EnvironmentVariable env)
+    {
+        saveEnvForRun(env);
+        return env.putenv();
     }
 }
 

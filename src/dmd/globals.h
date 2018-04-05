@@ -59,9 +59,19 @@ enum CPU
     native              // the machine the compiler is being run on
 };
 
+struct EnvironmentVariable
+{
+    const char *setString;
+    unsigned length;
+    unsigned equalsIndex;
+    bool putenv() const;
+    char *getenv() const;
+};
+
 // Put command line switches in here
 struct Param
 {
+    bool doneParsingCommandLine; // true when command line is fully parsed
     bool obj;           // write object file
     bool link;          // perform link
     bool dll;           // generate shared dynamic library
@@ -190,6 +200,7 @@ struct Param
 
     bool run;           // run resulting executable
     Strings runargs;    // arguments for executable
+    Array<EnvironmentVariable> envToRestoreBeforeRun;
 
     // Linker stuff
     Array<const char *> objfiles;
@@ -262,6 +273,9 @@ struct Global
     Returns: the version as the number that would be returned for __VERSION__
     */
     unsigned versionNumber();
+
+    void restoreEnvBeforeRun();
+    bool putenvWithCache(EnvironmentVariable env);
 };
 
 extern Global global;

@@ -1486,6 +1486,8 @@ private CPU setTargetCPU(CPU cpu)
 
 private bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param params, ref Strings files)
 {
+    scope(exit) global.params.doneParsingCommandLine = true;
+
     bool errors;
 
     void error(const(char)* format, const(char*) arg = null)
