@@ -12,7 +12,6 @@
 
 module dmd.aggregate;
 
-import core.stdc.stdio;
 import core.checkedint;
 
 import dmd.arraytypes;
@@ -29,11 +28,14 @@ import dmd.func;
 import dmd.globals;
 import dmd.id;
 import dmd.identifier;
+import dmd.log;
 import dmd.mtype;
 import dmd.semantic2;
 import dmd.semantic3;
 import dmd.tokens;
 import dmd.visitor;
+
+private enum LOG = logAll || false;
 
 enum Sizeok : int
 {
@@ -148,7 +150,7 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
         if (sizeok != Sizeok.none)
             return true;
 
-        //printf("determineFields() %s, fields.dim = %d\n", toChars(), fields.dim);
+        if (LOG) printf("determineFields() %s, fields.dim = %d\n", toChars(), fields.dim);
         // determineFields can be called recursively from one of the fields's v.semantic
         fields.setDim(0);
 
@@ -221,7 +223,7 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
      */
     final bool determineSize(Loc loc)
     {
-        //printf("AggregateDeclaration::determineSize() %s, sizeok = %d\n", toChars(), sizeok);
+        if (LOG) printf("AggregateDeclaration::determineSize() %s, sizeok = %d\n", toChars(), sizeok);
 
         // The previous instance size finalizing had:
         if (type.ty == Terror)
@@ -276,9 +278,9 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
 
     override final d_uns64 size(const ref Loc loc)
     {
-        //printf("+AggregateDeclaration::size() %s, scope = %p, sizeok = %d\n", toChars(), _scope, sizeok);
+        if (LOG) printf("+AggregateDeclaration::size() %s, scope = %p, sizeok = %d\n", toChars(), _scope, sizeok);
         bool ok = determineSize(loc);
-        //printf("-AggregateDeclaration::size() %s, scope = %p, sizeok = %d\n", toChars(), _scope, sizeok);
+        if (LOG) printf("-AggregateDeclaration::size() %s, scope = %p, sizeok = %d\n", toChars(), _scope, sizeok);
         return ok ? structsize : SIZE_INVALID;
     }
 
@@ -290,7 +292,7 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
      */
     final bool checkOverlappedFields()
     {
-        //printf("AggregateDeclaration::checkOverlappedFields() %s\n", toChars());
+        if (LOG) printf("AggregateDeclaration::checkOverlappedFields() %s\n", toChars());
         assert(sizeok == Sizeok.done);
         size_t nfields = fields.dim;
         if (isNested())
@@ -365,7 +367,7 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
      */
     final bool fill(Loc loc, Expressions* elements, bool ctorinit)
     {
-        //printf("AggregateDeclaration::fill() %s\n", toChars());
+        if (LOG) printf("AggregateDeclaration::fill() %s\n", toChars());
         assert(sizeok == Sizeok.done);
         assert(elements);
         size_t nfields = fields.dim - isNested();
@@ -518,7 +520,7 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
      */
     static void alignmember(structalign_t alignment, uint size, uint* poffset) pure nothrow @safe
     {
-        //printf("alignment = %d, size = %d, offset = %d\n",alignment,size,offset);
+        if (LOG) printf("alignment = %d, size = %d, offset = %d\n",alignment,size, poffset ? *poffset : -1);
         switch (alignment)
         {
         case cast(structalign_t)1:
@@ -646,7 +648,7 @@ extern (C++) abstract class AggregateDeclaration : ScopeDsymbol
         }
         if (enclosing)
         {
-            //printf("makeNested %s, enclosing = %s\n", toChars(), enclosing.toChars());
+            if (LOG) printf("makeNested %s, enclosing = %s\n", toChars(), enclosing.toChars());
             assert(t);
             if (t.ty == Tstruct)
                 t = Type.tvoidptr; // t should not be a ref type
