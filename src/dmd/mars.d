@@ -1824,6 +1824,10 @@ bool parseCommandLine(const ref Strings arguments, const size_t argc, ref Param 
                 error("-mscrtlib");
             }
         }
+        else if (arg == "-nodefaultlibs")
+        {
+            params.nodefaultlibs = true;
+        }
         else if (startsWith(p + 1, "profile")) // https://dlang.org/dmd.html#switch-profile
         {
             // Parse:

@@ -157,7 +157,7 @@ version (Posix)
  */
 public int runLINK()
 {
-    const phobosLibname = global.params.betterC ? null :
+    const phobosLibname = (global.params.betterC || global.params.nodefaultlibs) ? null :
         global.params.symdebug ? global.params.debuglibname : global.params.defaultlibname;
 
     void setExeFile()
@@ -289,8 +289,11 @@ public int runLINK()
         else
         {
             OutBuffer cmdbuf;
-            global.params.libfiles.push("user32");
-            global.params.libfiles.push("kernel32");
+            if (!global.params.nodefaultlibs)
+            {
+                global.params.libfiles.push("user32");
+                global.params.libfiles.push("kernel32");
+            }
             for (size_t i = 0; i < global.params.objfiles.dim; i++)
             {
                 if (i)
@@ -666,14 +669,17 @@ public int runLINK()
             }
         }
         //argv.push("-ldruntime");
-        argv.push("-lpthread");
-        argv.push("-lm");
-        version (linux)
+        if (!global.params.nodefaultlibs)
         {
-            // Changes in ld for Ubuntu 11.10 require this to appear after phobos2
-            argv.push("-lrt");
-            // Link against libdl for phobos usage of dlopen
-            argv.push("-ldl");
+            argv.push("-lpthread");
+            argv.push("-lm");
+            version (linux)
+            {
+                // Changes in ld for Ubuntu 11.10 require this to appear after phobos2
+                argv.push("-lrt");
+                // Link against libdl for phobos usage of dlopen
+                argv.push("-ldl");
+            }
         }
         if (global.params.verbose)
         {

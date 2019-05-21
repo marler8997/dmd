@@ -236,6 +236,7 @@ struct Param
     const char *resfile;
     DArray<const char> exefile;
     DArray<const char> mapfile;
+    bool nodefaultlibs;
 };
 
 typedef unsigned structalign_t;
