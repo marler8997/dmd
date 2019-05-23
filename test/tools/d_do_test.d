@@ -610,6 +610,9 @@ int tryMain(string[] args)
     string output_file    = result_path ~ input_file ~ ".out";
     string test_app_dmd_base = output_dir ~ envData.sep ~ test_name ~ "_";
 
+    if (test_base_name.extension() == ".vss")
+        return runVssTest(input_dir, test_name, output_file);
+
     // envData.sep is required as the results_dir path can be `generated`
     const absoluteResultDirPath = envData.results_dir.absolutePath ~ envData.sep;
     const resultsDirReplacement = "{{RESULTS_DIR}}" ~ envData.sep;
@@ -969,4 +972,47 @@ int runBashTest(string input_dir, string test_name)
         auto process = spawnProcess([scriptDir.buildPath("tools", "sh_do_test.sh"), input_dir, test_name]);
     }
     return process.wait();
+}
+
+int runVssTest(string input_dir, string test_name, string output_file)
+{
+    const vss = buildPath(scriptDir, "test_results", "vss");
+
+    writefln(" ... %s/%s.vss", input_dir, test_name);
+    stdout.flush();
+    if (exists(output_file))
+        remove(output_file);
+    const output_file_tmp = output_file ~ ".tmp";
+    mkdirsFor(output_file_tmp);
+
+    int exitCode;
+    {
+        auto outfile = File(output_file_tmp, "w");
+        const command = [vss, buildPath(scriptDir, "tools", "vss_do_test"), input_dir, test_name];
+        outfile.writeln(escapeShellCommand(command));
+        auto proc = spawnProcess(command, stdin, outfile, outfile);
+        exitCode = wait(proc);
+    }
+    if (exitCode == 0)
+        rename(output_file_tmp, output_file);
+    else
+    {
+        writeln("==============================");
+        writefln("Test '%s/%s.vss' failed. The logged output:", input_dir, test_name);
+        const output = readText(output_file_tmp);
+        write(output);
+        if (!output.endsWith("\n"))
+              writeln();
+        writeln("==============================");
+        remove(output_file_tmp);
+    }
+    return exitCode;
+}
+
+/// Make any parent diretories needed for the given `filename`
+void mkdirsFor(string filename)
+{
+    auto dir = dirName(filename);
+    if (!exists(dir))
+        mkdirRecurse(dir);
 }

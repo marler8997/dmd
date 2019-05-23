@@ -15,7 +15,7 @@ shift
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # export common variables
-source "$DIR/exported_vars.sh"
+source "$DIR/exported_vars.vss"
 
 # Remove TEST_DIR and TEST_NAME
 shift

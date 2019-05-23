@@ -1,0 +1,32 @@
+if [ "$OS" != linux ]
+   exit 0
+fi
+
+set out ${OUTPUT_BASE}
+
+# create two libraries with the first depending on the second
+# so that if they're given the wrong order on the commandline,
+# linking would ordinarily fail
+set lib1_source $out/first.d
+set lib2_source $out/second.d
+set lib1 $out/libfirst.a
+set lib2 $out/libsecond.a
+# call from D
+set D_FILE $out/test.d
+set APP $out/test
+
+mkdir -p $out
+
+echo "module first;import second;int first(int x) { return second.second(x); }" > $lib1_source
+echo "module second;int second(int x) { return 0; }" > $lib2_source
+echo "module test; import first; void main() { first.first(0); }" > $D_FILE
+
+$DMD -m$MODEL -lib -of$lib1 -I$out $lib1_source
+$DMD -m$MODEL -lib -of$lib2 -I$out $lib2_source
+
+# -lsecond -lfirst is wrong but for --start-group/--end-group,
+# so --start-group and --end-group must not be reordered relative to the libraries
+$DMD -m$MODEL -of$APP $D_FILE -I$out -L-L$out -L=--start-group -L-lsecond -L-lfirst -L=--end-group
+
+# analogously for libsecond.a libfirst.a
+$DMD -m$MODEL -of$APP $D_FILE -I$out -L-L$out -L=--start-group -L=$out/libsecond.a -L=$out/libfirst.a -L=--end-group

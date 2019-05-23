@@ -33,7 +33,8 @@ enum TestTools
 {
     unitTestRunner = TestTool("unit_test_runner", [toolsDir.buildPath("paths")]),
     testRunner = TestTool("d_do_test"),
-    jsonSanitizer = TestTool("sanitize_json")
+    jsonSanitizer = TestTool("sanitize_json"),
+    vss = TestTool("vss"),
 }
 
 immutable struct TestTool

@@ -1,0 +1,13 @@
+#!/usr/bin/env vss
+
+if [ "$RESULTS_DIR" == "" ]
+    echo Note: this program is normally called through the Makefile, it
+    echo is not meant to be called directly by the user.
+    exit 1
+fi
+
+set DIR $builtin.abs_dir
+source $DIR/exported_vars.vss
+
+set builtin.printCommands 1
+source "${TEST_DIR}/${TEST_NAME}.vss"
