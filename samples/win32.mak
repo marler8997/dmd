@@ -45,18 +45,18 @@ wc2:
 	.\wc2.exe wc2.d
 
 winsamp:
-	$(DMD) winsamp $(DFLAGS) gdi32.lib user32.lib winsamp.def
+	$(DMD) winsamp $(DFLAGS) gdi32.lib user32.lib kernel32.lib winsamp.def
 	# .\winsamp.exe
 
 # COM client/server example
 # dclient will fail unless run with administrator rights
 dserver32:
-	$(DMD) dserver.d chello.d $(DFLAGS) dserver.def advapi32.lib ole32.lib user32.lib
+	$(DMD) dserver.d chello.d $(DFLAGS) dserver.def advapi32.lib ole32.lib user32.lib kernel32.lib
 	$(DMD) dclient $(DFLAGS) ole32.lib uuid.lib
 	.\dclient.exe
 
 dserver64:
-	$(DMD) dserver.d chello.d $(DFLAGS) -L/DLL dserver64.def advapi32.lib ole32.lib user32.lib
+	$(DMD) dserver.d chello.d $(DFLAGS) -L/DLL dserver64.def advapi32.lib ole32.lib user32.lib kernel32.lib
 	$(DMD) dclient $(DFLAGS) ole32.lib uuid.lib
 	.\dclient.exe
 

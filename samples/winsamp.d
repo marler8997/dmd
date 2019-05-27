@@ -6,7 +6,7 @@ module winsamp;
  +  dmd winsamp -L-Subsystem:Windows
  +
  + 64 bit version:
- +  dmd -m64 winsamp -L-Subsystem:Windows user32.lib
+ +  dmd -m64 winsamp -L-Subsystem:Windows user32.lib kernel32.lib
  +/
 
 pragma(lib, "gdi32.lib");

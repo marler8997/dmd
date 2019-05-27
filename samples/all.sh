@@ -41,7 +41,7 @@ $(DMD) winsamp gdi32.lib winsamp.def
 winsamp
 
 # COM client/server example
-$(DMD) dserver.d chello.d dserver.def advapi32.lib ole32.lib user32.lib
+$(DMD) dserver.d chello.d dserver.def advapi32.lib ole32.lib user32.lib kernel32.lib
 # dclient will fail unless run with administrator rights
 $(DMD) dclient $(DFLAGS) ole32.lib uuid.lib
 dclient
