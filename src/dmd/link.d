@@ -21,6 +21,7 @@ import core.sys.posix.unistd;
 import core.sys.windows.winbase;
 import core.sys.windows.windef;
 import core.sys.windows.winreg;
+import dmd.env;
 import dmd.errors;
 import dmd.globals;
 import dmd.root.file;
@@ -30,7 +31,6 @@ import dmd.root.rmem;
 import dmd.utils;
 
 version (Posix) extern (C) int pipe(int*);
-version (Windows) extern (C) int putenv(const char*);
 version (Windows) extern (C) int spawnlp(int, const char*, const char*, const char*, const char*);
 version (Windows) extern (C) int spawnl(int, const char*, const char*, const char*, const char*);
 version (Windows) extern (C) int spawnv(int, const char*, const char**);
@@ -769,17 +769,11 @@ version (Windows)
         {
             if ((len = strlen(args)) > 255)
             {
-                char* q = cast(char*)alloca(8 + len + 1);
-                sprintf(q, "_CMDLINE=%s", args);
-                status = putenv(q);
+                status = putenvRestorable("_CMDLINE", args[0 .. len]);
                 if (status == 0)
-                {
                     args = "@_CMDLINE";
-                }
                 else
-                {
                     error(Loc.initial, "command line length of %d is too long", len);
-                }
             }
         }
         // Normalize executable path separators
@@ -897,6 +891,7 @@ public int runProgram()
         argv.push(a);
     }
     argv.push(null);
+    RestorableEnv.restore();
     version (Windows)
     {
         const(char)[] ex = FileName.name(global.params.exefile);
@@ -1057,12 +1052,15 @@ version (Windows)
                     const pathlen = strlen(path);
                     const addpathlen = strlen(addpath);
 
-                    char* npath = cast(char*)mem.xmalloc(5 + pathlen + 1 + addpathlen + 1);
+                    const length = 5 + addpathlen + 1 + pathlen;
+                    char* npath = cast(char*)mem.xmalloc(length + 1);
                     memcpy(npath, "PATH=".ptr, 5);
                     memcpy(npath + 5, addpath, addpathlen);
                     npath[5 + addpathlen] = ';';
                     memcpy(npath + 5 + addpathlen + 1, path, pathlen + 1);
-                    putenv(npath);
+                    if (LocalEnvVar(cast(string)npath[0 .. length], 4).putenvRestorable != 0)
+                        assert(0, "putenvRestorable failed");
+                    mem.xfree(npath); // on windows putenv makes a copy so we can free
                 }
                 return cmdbuf.extractChars();
             }
