@@ -310,6 +310,15 @@ auto defineDmd(string[] extraFlags...)
     return new DependencyRef(dependency);
 }
 
+struct DependencyAlias { string name; DependencyRef function() dep; }
+immutable dependencyAliases = [
+    DependencyAlias("lexer", &lexer),
+    DependencyAlias("dmd.conf", &dmdConf),
+    DependencyAlias("optabgen", &opTabGen),
+    DependencyAlias("dbackend", &dBackend),
+    DependencyAlias("backend", &backend),
+];
+
 /**
 Goes through the target list and replaces short-hand targets with their expanded version.
 Special targets:
@@ -387,8 +396,21 @@ auto predefinedTargets(string[] targets)
             case "all":
                 goto dmd;
             default:
-                writefln("ERROR: Target `%s` is unknown.", t);
-                writeln;
+                bool foundMatch = false;
+                foreach (alias_; dependencyAliases)
+                {
+                    if (t == alias_.name)
+                    {
+                        newTargets.put({alias_.dep().run;}.toDelegate);
+                        foundMatch = true;
+                        break;
+                    }
+                }
+                if (!foundMatch)
+                {
+                    writefln("ERROR: Target `%s` is unknown.", t);
+                    writeln;
+                }
                 break;
         }
     }
