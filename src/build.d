@@ -29,6 +29,17 @@ __gshared string[string] env;
 __gshared string[][string] flags;
 __gshared typeof(sourceFiles()) sources;
 
+/// Array of dependencies available to be specified by the user
+immutable publicDeps = [
+    &dmdDefault,
+    &runDmdUnittest,
+    &lexer,
+    &dmdConf,
+    &opTabGen,
+    &dBackend,
+    &backend,
+];
+
 void main(string[] args)
 {
     int jobs = totalCPUs;
@@ -47,6 +58,7 @@ Examples
     ./build.d dmd           # build DMD
     ./build.d unittest      # runs internal unittests
     ./build.d clean         # remove all generated files
+    ./build.d generated/linux/release/64/dmd.conf
 
 Important variables:
 --------------------
@@ -347,6 +359,7 @@ auto predefinedTargets(string[] targets)
 {
     import std.functional : toDelegate;
     Appender!(void delegate()[]) newTargets;
+LtargetsLoop:
     foreach (t; targets)
     {
         t = t.buildNormalizedPath; // remove trailing slashes
@@ -406,6 +419,19 @@ auto predefinedTargets(string[] targets)
             case "all":
                 goto dmd;
             default:
+                // check this last, target paths should be checked after predefined names
+                foreach (depFunc; publicDeps)
+                {
+                    auto dep = depFunc();
+                    foreach (depTarget; dep.targets)
+                    {
+                        if (depTarget.endsWith(t))
+                        {
+                            newTargets.put(&dep.run);
+                            continue LtargetsLoop;
+                        }
+                    }
+                }
                 writefln("ERROR: Target `%s` is unknown.", t);
                 writeln;
                 break;
