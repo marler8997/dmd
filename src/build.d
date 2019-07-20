@@ -33,6 +33,7 @@ __gshared typeof(sourceFiles()) sources;
 immutable rootDeps = [
     &dmdDefault,
     &runDmdUnittest,
+    &dmdFrontend,
     &clean,
 ];
 
@@ -336,7 +337,7 @@ auto defineDmdExe(string targetSuffix, string[] extraFlags...)
     // Main DMD build dependency
     Dependency dependency = {
         // newdelete.o + lexer.a + backend.a
-        sources: sources.dmd.chain(sources.root, lexer.targets, backend.targets).array,
+        sources: sources.dmd.chain(sources.root, sources.glue, lexer.targets, backend.targets).array,
         target: env["DMD_PATH"] ~ targetSuffix,
         msg: "(DC) DMD%s %-(%s, %)".format(targetSuffix, sources.dmd.map!(e => e.baseName).array),
         deps: [versionFile, sysconfDirFile, lexer, backend],
@@ -367,6 +368,30 @@ auto dmdUnittestExe()
 {
     return memoize!defineDmdExe("-unittest", ["-version=NoMain", "-unittest", "-main"]);
 }
+
+/// Dependency for the dmd frontend
+auto dmdFrontend() { return memoize!defineDmdFrontend(); }
+auto defineDmdFrontend()
+{
+    Dependency dependency = {
+        //name: "dmd_frontend",
+        // newdelete.o + lexer.a + backend.a
+        sources: sources.frontend.chain(sources.root, [env["D"].buildPath("gluelayer.d")], lexer.targets).array,
+        target: env["G"].buildPath("dmd_frontend".exeName),
+        msg: "(DC) DMD_FRONTEND %-(%s, %)".format(sources.frontend.map!(e => e.baseName).array),
+        deps: [lexer],
+        command: [
+            env["HOST_DMD_RUN"],
+            "-of$@",
+            "-vtls",
+            "-J"~env["G"],
+            "-J../res",
+            "-version=NoBackend",
+        ].chain(flags["DFLAGS"], "$<".only).array
+    };
+    return new DependencyRef(dependency);
+}
+
 
 /// Dependency to run the DMD unittest executable.
 alias runDmdUnittest = memoize!defineRunDmdUnittest;
@@ -432,6 +457,10 @@ LtargetsLoop:
 
         switch (t)
         {
+            case "all":
+                t = "dmd";
+                goto default;
+
             case "auto-tester-build":
                 "TODO: auto-tester-all".writeln; // TODO
                 break;
@@ -484,6 +513,7 @@ LtargetsLoop:
                 }
                 writefln("ERROR: Target `%s` is unknown.", t);
                 writeln;
+                exit(1);
                 break;
         }
     }
@@ -584,7 +614,8 @@ void parseEnvironment()
     env.getDefault("HOST_DMD", "dmd");
 
     // Auto-bootstrapping of a specific host compiler
-    if (env.getDefault("AUTO_BOOTSTRAP", "0") != "0")
+    const autoBootstrap = env.getDefault("AUTO_BOOTSTRAP", "0");
+    if (autoBootstrap.length && autoBootstrap != "0")
     {
         auto hostDMDVer = "2.074.1";
         writefln("Using Bootstrap compiler: %s", hostDMDVer);
@@ -693,7 +724,7 @@ auto sourceFiles()
     struct Sources
     {
         string[] frontend, lexer, root, glue, dmd, backend;
-        string[] backendHeaders, backendObjects;
+        string[] backendHeaders;
     }
     string targetCH;
     string[] targetObjs;
@@ -710,35 +741,57 @@ auto sourceFiles()
     {
         assert(0, "Unknown TARGET_CPU: " ~ env["TARGET_CPU"]);
     }
-    const lexerDmdFiles = [
-        "console",
-        "entity",
-        "errors",
-        "globals",
-        "id",
-        "identifier",
-        "lexer",
-        "tokens",
-        "utf",
-    ];
-    const lexerRootFiles = [
-        "array",
-        "ctfloat",
-        "file",
-        "filename",
-        "hash",
-        "outbuffer",
-        "port",
-        "rmem",
-        "rootobject",
-        "stringtable",
-    ];
+    const glueFiles = "
+        irstate
+        toctype
+        glue
+        gluelayer
+        todt
+        tocsym
+        toir
+        dmsc
+        tocvdebug
+        s2ir
+        toobj
+        e2ir
+        eh
+        iasm
+        iasmdmd
+        iasmgcc
+        objc_glue
+    ".split;
+    const lexerDmdFiles = "
+        console
+        entity
+        errors
+        filecache
+        globals
+        id
+        identifier
+        lexer
+        tokens
+        utf
+    ".split;
+    const lexerRootFiles = "
+        array
+        ctfloat
+        file
+        filename
+        hash
+        outbuffer
+        port
+        rmem
+        rootobject
+        stringtable
+    ".split;
     Sources sources = {
         frontend:
             dirEntries(env["D"], "*.d", SpanMode.shallow)
                 .map!(e => e.name)
-                .filter!(e => !lexerDmdFiles.chain(["asttypename", "frontend"]).canFind(e.baseName.stripExtension))
+                .filter!(e => !lexerDmdFiles.chain(glueFiles, ["asttypename", "frontend"]).canFind(e.baseName.stripExtension))
                 .array,
+        glue:
+            glueFiles.map!(e => env["D"].buildPath(e ~ ".d")).array,
         lexer:
             lexerDmdFiles.map!(e => env["D"].buildPath(e ~ ".d")).chain(
             lexerRootFiles.map!(e => env["ROOT"].buildPath(e ~ ".d"))).array,
@@ -747,16 +800,21 @@ auto sourceFiles()
                 .map!(e => e.name)
                 .filter!(e => !lexerRootFiles.canFind(e.baseName.stripExtension))
                 .array,
-        backend:
-            dirEntries(env["C"], "*.d", SpanMode.shallow)
-                .map!(e => e.name)
-                .filter!(e => !e.baseName.among("dt.d", "obj.d", "optabgen.d"))
-                .array,
-        backendHeaders: [
-            // can't be built with -betterC
-            "dt",
-            "obj",
-        ].map!(e => env["C"].buildPath(e ~ ".d")).array,
+        backend: "
+            bcomplex evalu8 divcoeff dvec go gsroa glocal gdag gother gflow
+            out
+            gloop compress cgelem cgcs ee cod4 cod5 nteh blockopt mem cg cgreg
+            dtype debugprint fp symbol elem dcode cgsched cg87 cgxmm cgcod cod1 cod2
+            cod3 cv8 dcgcv pdata util2 var md5 backconfig ph2 drtlsym dwarfeh ptrntab
+            aarray dvarstats dwarfdbginf elfobj cgen os goh barray cgcse elpicpie
+        ".split.map!(e => env["C"].buildPath(e ~ ".d")).array,
+        backendHeaders: "
+            cc cdef cgcv code cv4 dt el global
+            obj oper outbuf rtlsym code_x86 iasm codebuilder
+            ty type exh mach mscoff dwarf dwarf2 xmm
+            dlist melf
+        ".split.map!(e => env["C"].buildPath(e))
+        .chain([env["C"].buildPath("varstats.di")]).array,
     };
     sources.dmd = sources.frontend ~ sources.backendHeaders;
 

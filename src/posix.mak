@@ -411,13 +411,15 @@ STRING_IMPORT_FILES = $G/VERSION $G/SYSCONFDIR.imp $(RES)/default_ddoc_theme.ddo
 
 DEPS = $(patsubst %.o,%.deps,$(DMD_OBJS) $(BACK_OBJS) $(BACK_DOBJS))
 
-######## Begin build targets
+RUN_BUILD = $(GENERATED)/build AUTO_BOOTSTRAP="$(AUTO_BOOTSTRAP)" HOST_DMD="$(HOST_DMD)"
 
+######## Begin build targets
 
 all: dmd
 .PHONY: all
 
-dmd: $G/dmd $G/dmd.conf
+dmd: $(GENERATED)/build FORCE
+	$(RUN_BUILD) $@
 .PHONY: dmd
 
 auto-tester-build: dmd checkwhitespace cxx-unittest $G/dmd_frontend
@@ -436,28 +438,14 @@ toolchain-info:
 	@echo '==== Toolchain Information ===='
 	@echo
 
-$G/backend.a: $(G_OBJS) $(G_DOBJS) $(SRC_MAKE)
-	$(AR) rcs $@ $(G_OBJS) $(G_DOBJS)
+$(GENERATED)/build: build.d $(HOST_DMD_PATH)
+	$(HOST_DMD_RUN) -of$@ -debug build.d
 
-$G/lexer.a: $(LEXER_SRCS) $(LEXER_ROOT) $(HOST_DMD_PATH) $(SRC_MAKE) $(STRING_IMPORT_FILES)
-	$(HOST_DMD_RUN) -lib -of$@ $(MODEL_FLAG) -J$G $(DFLAGS) $(LEXER_SRCS) $(LEXER_ROOT)
+$G/%: $(GENERATED)/build FORCE
+	$(RUN_BUILD) $@
 
-$G/dmd_frontend: $(FRONT_SRCS) $D/gluelayer.d $(ROOT_SRCS) $G/lexer.a $(STRING_IMPORT_FILES) $(HOST_DMD_PATH)
-	$(HOST_DMD_RUN) -of$@ $(MODEL_FLAG) -vtls -J$G -J$(RES) $(DFLAGS) $(filter-out $(STRING_IMPORT_FILES) $(HOST_DMD_PATH),$^) -version=NoBackend
-
-ifdef ENABLE_LTO
-$G/dmd: $(DMD_SRCS) $(ROOT_SRCS) $G/lexer.a $(G_OBJS) $(G_DOBJS) $(STRING_IMPORT_FILES) $(HOST_DMD_PATH)
-	$(HOST_DMD_RUN) -of$@ $(MODEL_FLAG) -vtls -J$G -J$(RES) $(DFLAGS) $(filter-out $(STRING_IMPORT_FILES) $(HOST_DMD_PATH),$^)
-else
-$G/dmd: $(DMD_SRCS) $(ROOT_SRCS) $G/backend.a $G/lexer.a $(STRING_IMPORT_FILES) $(HOST_DMD_PATH)
-	$(HOST_DMD_RUN) -of$@ $(MODEL_FLAG) -vtls -J$G -J$(RES) $(DFLAGS) $(filter-out $(STRING_IMPORT_FILES) $(HOST_DMD_PATH) $(LEXER_ROOT),$^)
-endif
-
-$G/dmd-unittest: $(DMD_SRCS) $(ROOT_SRCS) $(LEXER_SRCS) $(G_OBJS) $(G_DOBJS) $(STRING_IMPORT_FILES) $(HOST_DMD_PATH)
-	$(HOST_DMD_RUN) -of$@ $(MODEL_FLAG) -vtls -J$G -J$(RES) $(DFLAGS) -g -unittest -main -version=NoMain $(filter-out $(STRING_IMPORT_FILES) $(HOST_DMD_PATH),$^)
-
-unittest: $G/dmd-unittest
-	$<
+unittest: $(GENERATED)/build FORCE
+	$(RUN_BUILD) unittest
 
 ######## DMD as a library examples
 
@@ -476,7 +464,6 @@ build-examples: $(EXAMPLES)
 
 clean:
 	rm -Rf $(GENERATED)
-	rm -f $(addprefix $D/backend/, $(optabgen_output))
 	@[ ! -d ${PGO_DIR} ] || echo You should issue manually: rm -rf ${PGO_DIR}
 
 ######## Download and install the last dmd buildable without dmd
@@ -495,31 +482,8 @@ endif
 
 ######## generate a default dmd.conf
 
-define DEFAULT_DMD_CONF
-[Environment32]
-DFLAGS=-I%@P%/../../../../../druntime/import -I%@P%/../../../../../phobos -L-L%@P%/../../../../../phobos/generated/$(OS)/$(BUILD)/32$(if $(filter $(OS),osx),, -L--export-dynamic)
-
-[Environment64]
-DFLAGS=-I%@P%/../../../../../druntime/import -I%@P%/../../../../../phobos -L-L%@P%/../../../../../phobos/generated/$(OS)/$(BUILD)/64$(if $(filter $(OS),osx),, -L--export-dynamic) -fPIC
-endef
-
-export DEFAULT_DMD_CONF
-
-$G/dmd.conf: $(SRC_MAKE)
-	echo "$$DEFAULT_DMD_CONF" > $@
-
-######## optabgen generates some source
-optabgen_output = tytab.d
-
-$G/optabgen: $C/optabgen.d $C/cc.d $C/oper.d $(HOST_DMD_PATH)
-	$(HOST_DMD_RUN) -of$@ $(DFLAGS) $(MODEL_FLAG) $(BACK_MV) $<
-	$G/optabgen
-	mv $(optabgen_output) $G
-
-optabgen_files = $(addprefix $G/, $(optabgen_output))
-$(optabgen_files): optabgen.out
-.INTERMEDIATE: optabgen.out
-optabgen.out : $G/optabgen
+$G/dmd.conf: $(GENERATED)/build FORCE
+	$(RUN_BUILD) $@
 
 ######## VERSION
 ########################################################################
@@ -545,10 +509,6 @@ FORCE: ;
 #vpath %.c $C
 
 -include $(DEPS)
-
-$(G_DOBJS): $G/%.o: $C/%.d $(optabgen_files) posix.mak $(HOST_DMD_PATH)
-	@echo "  (HOST_DMD_RUN)  BACK_DOBJS  $<"
-	$(HOST_DMD_RUN) -c -of$@ $(DFLAGS) $(MODEL_FLAG) $(BACK_BETTERC) $(BACK_DFLAGS) $<
 
 ################################################################################
 # Generate the man pages
@@ -605,7 +565,7 @@ dscanner: $(DSCANNER_DIR)/dsc
 $G/cxxfrontend.o: $G/%.o: tests/%.c $(SRC) $(ROOT_SRC) $(SRC_MAKE)
 	$(CXX) -c -o$@ $(CXXFLAGS) $(DMD_FLAGS) $(MMD) $<
 
-$G/cxx-unittest: $G/cxxfrontend.o $(DMD_SRCS) $(ROOT_SRCS) $G/lexer.a $(G_OBJS) $(G_DOBJS) $(STRING_IMPORT_FILES) $(HOST_DMD_PATH)
+$G/cxx-unittest: $G/cxxfrontend.o $(DMD_SRCS) $(ROOT_SRCS) $G/lexer.a $(G_OBJS) $G/dbackend.o $(STRING_IMPORT_FILES) $(HOST_DMD_PATH)
 	CC=$(HOST_CXX) $(HOST_DMD_RUN) -of$@ $(MODEL_FLAG) -vtls -J$G -J$(RES) -L-lstdc++ $(DFLAGS) -version=NoMain $(filter-out $(STRING_IMPORT_FILES) $(HOST_DMD_PATH),$^)
 
 cxx-unittest: $G/cxx-unittest
@@ -662,3 +622,6 @@ endif
 ######################################################
 
 .DELETE_ON_ERROR: # GNU Make directive (delete output files on error)
+
+# disable parallel in the Makefile because build.d will already be parallel
+.NOTPARALLEL:
