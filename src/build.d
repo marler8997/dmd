@@ -34,15 +34,18 @@ immutable rootDeps = [
     &dmdDefault,
     &runDmdUnittest,
     &clean,
+    &examples,
 ];
 
 void main(string[] args)
 {
     int jobs = totalCPUs;
+    bool calledFromMake = false;
     auto res = getopt(args,
         "j|jobs", "Specifies the number of jobs (commands) to run simultaneously (default: %d)".format(totalCPUs), &jobs,
         "v", "Verbose command output", (cast(bool*) &verbose),
         "f", "Force run (ignore timestamps and always run all tests)", (cast(bool*) &force),
+        "called-from-make", "Calling the build script from the Makefile", &calledFromMake
     );
     void showHelp()
     {
@@ -116,8 +119,25 @@ Command-line parameters
             log("%s=%s", key, value);
         log("================================================================================");
     }
-    foreach (target; targets.parallel(1))
-        target();
+    {
+        File lockFile;
+        if (calledFromMake)
+        {
+            // If called from make, use an interprocess lock so that parallel builds don't stomp on each other
+            lockFile = File(env["GENERATED"].buildPath("build.lock"), "w");
+            lockFile.lock();
+        }
+        scope (exit)
+        {
+            if (calledFromMake)
+            {
+                lockFile.unlock();
+                lockFile.close();
+            }
+        }
+        foreach (target; targets.parallel(1))
+            target();
+    }
 
     writeln("Success");
 }
@@ -180,7 +200,26 @@ alias lexer = memoize!(function() {
             env["HOST_DMD_RUN"],
             "-of$@",
             "-lib",
+            "-vtls",
             "-J"~env["G"], "-J../res",
+        ].chain(flags["DFLAGS"], "$<".only).array
+    };
+    return new DependencyRef(dependency);
+});
+
+/// Returns: the dependency that builds the parser
+alias parser = memoize!(function() {
+    Dependency dependency = {
+        name: "parser",
+        target: env["G"].buildPath("parser").libName,
+        sources: chain(sources.parser, sources.lexer, sources.root).array,
+        deps: [dmdDefault, versionFile],
+        msg: "(DC) D_PARSER_OBJ %-(%s, %)".format(sources.parser.map!(e => e.baseName).array),
+        command: [
+            dmdExe(null, null).target,
+            "-of$@",
+            "-lib",
+            "-J"~env["G"],
         ].chain(flags["DFLAGS"], "$<".only).array
     };
     return new DependencyRef(dependency);
@@ -282,7 +321,10 @@ alias versionFile = memoize!(function() {
     const versionFile = env["G"].buildPath("VERSION");
     auto commandFunction = (){
         "(TX) VERSION".writeln;
-        ["git", "describe", "--dirty"].runCanThrow.toFile(versionFile);
+        if (srcDir.dirName.buildPath(".git").exists)
+            ["git", "describe", "--dirty", "--always"].runCanThrow.toFile(versionFile);
+        else
+            copy(srcDir.dirName.buildPath("VERSION"), versionFile);
     };
     Dependency dependency = {
         target: versionFile,
@@ -360,6 +402,30 @@ alias runDmdUnittest = memoize!(function() {
     return new DependencyRef(dependency);
 });
 
+alias example = memoize!(function(string name) {
+    const target = env["G"].buildPath("examples", name);
+    Dependency dependency = {
+        target: target,
+        msg: "(DC) " ~ target,
+        sources: [parser.target, env["EX"].buildPath(name ~ ".d")],
+        deps: [dmdDefault, parser],
+        command: [
+            dmdExe(null, null).target,
+            "-of$@",
+        ].chain(flags["DFLAGS"], "$<".only).array
+    };
+    return new DependencyRef(dependency);
+});
+
+alias examples = memoize!(function() {
+    Dependency dependency = {
+        name: "examples",
+        description: "a few examples",
+        deps: "avg impvisitor".split.map!(e => example(e)).array,
+    };
+    return new DependencyRef(dependency);
+});
+
 alias clean = memoize!(function() {
     auto commandFunction = (){
         if (env["G"].exists)
@@ -405,6 +471,10 @@ LtargetsLoop:
 
         switch (t)
         {
+            case "all":
+                t = "dmd";
+                goto default;
+
             case "auto-tester-build":
                 "TODO: auto-tester-all".writeln; // TODO
                 break;
@@ -457,6 +527,7 @@ LtargetsLoop:
                 }
                 writefln("ERROR: Target `%s` is unknown.", t);
                 writeln;
+                exit(1);
                 break;
         }
     }
@@ -549,7 +620,7 @@ void parseEnvironment()
     auto d = env.getDefault("D", srcDir.buildPath("dmd"));
     env.getDefault("C", d.buildPath("backend"));
     env.getDefault("ROOT", d.buildPath("root"));
-    env.getDefault("EX", d.buildPath("examples"));
+    env.getDefault("EX", srcDir.buildPath("examples"));
     auto generated = env.getDefault("GENERATED", srcDir.dirName.buildPath("generated"));
     auto g = env.getDefault("G", generated.buildPath(os, build, model));
     mkdirRecurse(g);
@@ -595,11 +666,11 @@ void processEnvironment()
     const os = env["OS"];
 
     auto hostDMDVersion = [env["HOST_DMD_RUN"], "--version"].execute.output;
-    if (hostDMDVersion.find("DMD"))
+    if (hostDMDVersion.canFind("DMD"))
         env["HOST_DMD_KIND"] = "dmd";
-    else if (hostDMDVersion.find("LDC"))
+    else if (hostDMDVersion.canFind("LDC"))
         env["HOST_DMD_KIND"] = "ldc";
-    else if (!hostDMDVersion.find("GDC", "gdmd")[0].empty)
+    else if (hostDMDVersion.canFind("GDC", "gdmd", "gdc"))
         env["HOST_DMD_KIND"] = "gdc";
     else
         enforce(0, "Invalid Host DMD found: " ~ hostDMDVersion);
@@ -667,7 +738,7 @@ auto sourceFiles()
 {
     struct Sources
     {
-        string[] frontend, lexer, root, glue, dmd, backend;
+        string[] frontend, lexer, root, glue, dmd, backend, parser;
         string[] backendHeaders, backendObjects;
     }
     string targetCH;
@@ -718,6 +789,12 @@ auto sourceFiles()
         lexer:
             lexerDmdFiles.map!(e => env["D"].buildPath(e ~ ".d")).chain(
             lexerRootFiles.map!(e => env["ROOT"].buildPath(e ~ ".d"))).array,
+        parser: "
+            parse.d
+            astbase.d
+            parsetimevisitor.d transitivevisitor.d permissivevisitor.d strictvisitor.d
+            utils.d
+        ".split.map!(e => env["D"].buildPath(e)).array,
         root:
             dirEntries(env["ROOT"], "*.d", SpanMode.shallow)
                 .map!(e => e.name)
@@ -816,9 +893,9 @@ auto detectModel()
     else
         uname = ["uname", "-m"].execute.output;
 
-    if (!uname.find("x86_64", "amd64", "64-bit", "64 bit")[0].empty)
+    if (uname.canFind("x86_64", "amd64", "64-bit", "64 bit"))
         return "64";
-    if (!uname.find("i386", "i586", "i686", "32-bit", "32 bit")[0].empty)
+    if (uname.canFind("i386", "i586", "i686", "32-bit", "32 bit"))
         return "32";
 
     throw new Exception(`Cannot figure 32/64 model from "` ~ uname ~ `"`);
@@ -1071,7 +1148,7 @@ class DependencyRef
             command[i] = c.replace("$@", target);
 
         // Support $< (shortcut for the source path)
-        if (!command[$ - 1].find("$<").empty)
+        if (command[$ - 1].canFind("$<"))
             command = command.remove(command.length - 1) ~ dep.sources;
     }
 }

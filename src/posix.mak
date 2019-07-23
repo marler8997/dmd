@@ -411,6 +411,8 @@ STRING_IMPORT_FILES = $G/VERSION $G/SYSCONFDIR.imp $(RES)/default_ddoc_theme.ddo
 
 DEPS = $(patsubst %.o,%.deps,$(DMD_OBJS) $(BACK_OBJS) $(BACK_DOBJS))
 
+RUN_BUILD = $(GENERATED)/build HOST_DMD="$(HOST_DMD)" OS=$(OS) BUILD=$(BUILD) MODEL=$(MODEL) AUTO_BOOTSTRAP="$(AUTO_BOOTSTRAP)" --called-from-make
+
 ######## Begin build targets
 
 
@@ -419,6 +421,9 @@ all: dmd
 
 dmd: $G/dmd $G/dmd.conf
 .PHONY: dmd
+
+$(GENERATED)/build: build.d $(HOST_DMD_PATH)
+	$(HOST_DMD_RUN) -of$@ -debug build.d
 
 auto-tester-build: dmd checkwhitespace cxx-unittest $G/dmd_frontend
 .PHONY: auto-tester-build
@@ -439,9 +444,6 @@ toolchain-info:
 $G/backend.a: $(G_OBJS) $(G_DOBJS) $(SRC_MAKE)
 	$(AR) rcs $@ $(G_OBJS) $(G_DOBJS)
 
-$G/lexer.a: $(LEXER_SRCS) $(LEXER_ROOT) $(HOST_DMD_PATH) $(SRC_MAKE) $(STRING_IMPORT_FILES)
-	$(HOST_DMD_RUN) -lib -of$@ $(MODEL_FLAG) -J$G $(DFLAGS) $(LEXER_SRCS) $(LEXER_ROOT)
-
 $G/dmd_frontend: $(FRONT_SRCS) $D/gluelayer.d $(ROOT_SRCS) $G/lexer.a $(STRING_IMPORT_FILES) $(HOST_DMD_PATH)
 	$(HOST_DMD_RUN) -of$@ $(MODEL_FLAG) -vtls -J$G -J$(RES) $(DFLAGS) $(filter-out $(STRING_IMPORT_FILES) $(HOST_DMD_PATH),$^) -version=NoBackend
 
@@ -461,16 +463,11 @@ unittest: $G/dmd-unittest
 
 ######## DMD as a library examples
 
-EXAMPLES=$(addprefix $G/examples/, avg impvisitor)
 PARSER_SRCS=$(addsuffix .d, $(addprefix $D/,parse astbase parsetimevisitor transitivevisitor permissivevisitor strictvisitor utils))
 
-$G/parser.a: $(PARSER_SRCS) $(LEXER_SRCS) $(ROOT_SRCS) dmd $(SRC_MAKE)
-	$G/dmd -lib -of$@ $(MODEL_FLAG) -J$G $(DFLAGS) $(PARSER_SRCS) $(LEXER_SRCS) $(ROOT_SRCS)
+build-examples: $(GENERATED)/build FORCE
+	$(RUN_BUILD) examples
 
-$G/examples/%: $(EX)/%.d $G/parser.a dmd
-	$G/dmd -of$@ $(MODEL_FLAG) $(DFLAGS) $G/parser.a $<
-
-build-examples: $(EXAMPLES)
 
 ######## Manual cleanup
 
@@ -621,6 +618,12 @@ zip:
 
 gitzip:
 	git archive --format=zip HEAD > $(ZIPFILE)
+
+######################################################
+# Default rule to forward targets to build.d
+
+$G/%: $(GENERATED)/build FORCE
+	$(RUN_BUILD) $@
 
 ################################################################################
 # DDoc documentation generation
