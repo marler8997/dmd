@@ -380,20 +380,24 @@ L1:
 
 void save87(ref CodeBuilder cdb)
 {
-    bool any = false;
-    while (_8087elems[0].e && stackused)
+    uint saved = 0;
+    while (stackused)
     {
-        // Save it
-        int i = getemptyslot();
-        if (NDPP) printf("saving %p in temporary NDP.save[%d]\n",_8087elems[0].e,i);
-        NDP.save[i] = _8087elems[0];
+        assert(saved <= _8087elems.length, "stackused is non-zero but theres nothing in the 8087 stack");
+        if (_8087elems[0].e)
+        {
+            // Save it
+            int i = getemptyslot();
+            if (NDPP) printf("saving %p in temporary NDP.save[%d]\n",_8087elems[0].e,i);
+            NDP.save[i] = _8087elems[0];
 
-        genfwait(cdb);
-        ndp_fstp(cdb,i,_8087elems[0].e.Ety); // FSTP i[BP]
+            genfwait(cdb);
+            ndp_fstp(cdb,i,_8087elems[0].e.Ety); // FSTP i[BP]
+        }
         pop87();
-        any = true;
+        saved++;
     }
-    if (any)                          // if any stores
+    if (saved > 0)                          // if any stores
         genfwait(cdb);   // wait for last one to finish
 }
 
