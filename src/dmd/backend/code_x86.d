@@ -562,7 +562,79 @@ struct NDP
     __gshared int savetop;         // # of entries used in save[]
 }
 
-extern __gshared NDP[8] _8087elems;
+struct NDPStack
+{
+  nothrow:
+    /// The length of the stack
+    enum length = 8;
+
+    private NDP[length] _elems;
+    private int _used;
+
+    /// Zero all elements
+    void zero()
+    {
+        import core.stdc.string : memset;
+        memset(_elems.ptr, 0, _elems.sizeof);
+    }
+
+    /// Copy the contents from the other stack to this stack
+    void copyFrom(ref NDPStack other)
+    {
+        this._elems = other._elems;
+        this._used = other._used;
+    }
+
+    ref NDP front() return { return _elems[0]; }
+
+    /// Get the element at the capacity limit
+    auto getElementAtCapacityLimit() { return _elems[$ - 1]; }
+
+    /// Set a specific element in the stack
+    void setAt(int i, elem* e, uint offset)
+    {
+        _elems[i].e = e;
+        _elems[i].offset = offset;
+    }
+
+    ref NDP getAt(int i) return { return _elems[i]; }
+
+    void exchange(int i, int j)
+    {
+        auto save = _elems[i];
+        _elems[i] = _elems[j];
+        _elems[j] = save;
+    }
+
+    /// Get the current number of used elements on the stack
+    int used() nothrow const { return _used; }
+
+    /// Override the number of used elements on the stack
+    void overrideUsed(int used) { this._used = used; }
+
+    /// Pop the first element off the stack
+    /// TODO: have the last element in the array be the first element
+    ///       in the stack, so we don't have to shift every time
+    void pop()
+    in { assert(used >= 1); } do
+    {
+        for (int i = 0; i < _elems.length - 1; i++)
+            _elems[i] = _elems[i + 1];
+        _elems[_elems.length - 1] = ndp_zero;
+        _used--;
+    }
+
+    /// Push an element onto the stack
+    void push()
+    in { assert(used < _elems.length); } do
+    {
+        for (int i = _elems.length - 1; i > 0; i--)
+            _elems[i] = _elems[i - 1];
+        _elems[0] = ndp_zero;
+        _used++;
+    }
+}
+extern __gshared { NDPStack _8087stack; NDP ndp_zero; }
 
 void getlvalue_msw(code *);
 void getlvalue_lsw(code *);

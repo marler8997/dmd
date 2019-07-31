@@ -218,7 +218,7 @@ tryagain:
     STACKALIGN = TARGET_STACKALIGN;
 
     regsave.reset();
-    memset(_8087elems.ptr,0,_8087elems.sizeof);
+    _8087stack.zero();
 
     calledFinally = false;
     usednteh = 0;
@@ -243,7 +243,7 @@ tryagain:
     sfunc.Sfunc.Fflags3 |= Fnothrow;
 
     floatreg = false;
-    assert(stackused == 0);             /* nobody in 8087 stack         */
+    assert(_8087stack.used == 0);             /* nobody in 8087 stack         */
 
     CSE.start();
     memset(&regcon,0,regcon.sizeof);
@@ -688,10 +688,10 @@ tryagain:
     sfunc.Sregsaved = (functy == TYifunc) ? cast(regm_t) mBP : (mfuncreg | fregsaved);
 
     debug
-    if (stackused != 0)
-      printf("stackused = %d\n",stackused);
+    if (_8087stack.used != 0)
+      printf("_8087stack.used = %d\n",_8087stack.used);
 
-    assert(stackused == 0);             /* nobody in 8087 stack         */
+    assert(_8087stack.used == 0);             /* nobody in 8087 stack         */
 
     /* Clean up ndp save array  */
     mem_free(NDP.save);

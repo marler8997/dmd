@@ -70,10 +70,8 @@ enum
 
 __gshared
 {
-    NDP[8] _8087elems;              // 8087 stack
+    NDPStack _8087stack;
     NDP ndp_zero;
-
-    int stackused = 0;              // number of items on the 8087 stack
 }
 
 /*********************************
@@ -223,17 +221,9 @@ void pop87() { pop87(__LINE__, __FILE__); }
 
 void pop87(int line, const(char)* file)
 {
-    int i;
-
     if (NDPP)
-        printf("pop87(%s(%d): stackused=%d)\n", file, line, stackused);
-
-    --stackused;
-    assert(stackused >= 0);
-    for (i = 0; i < _8087elems.length - 1; i++)
-        _8087elems[i] = _8087elems[i + 1];
-    // end of stack is nothing
-    _8087elems[_8087elems.length - 1] = ndp_zero;
+        printf("pop87(%s(%d): stackused=%d)\n", file, line, _8087stack.used);
+    _8087stack.pop();
 }
 
 
@@ -247,26 +237,24 @@ void push87(ref CodeBuilder cdb) { push87(cdb,__LINE__,__FILE__); }
 void push87(ref CodeBuilder cdb, int line, const(char)* file)
 {
     // if we would lose the top register off of the stack
-    if (_8087elems[7].e != null)
+    if (_8087stack.getElementAtCapacityLimit.e != null)
     {
         int i = getemptyslot();
-        NDP.save[i] = _8087elems[7];
+        NDP.save[i] = _8087stack.getElementAtCapacityLimit;
         cdb.genf2(0xD9,0xF6);                         // FDECSTP
         genfwait(cdb);
-        ndp_fstp(cdb, i, _8087elems[7].e.Ety);       // FSTP i[BP]
-        assert(stackused == 8);
+        ndp_fstp(cdb, i, _8087stack.getElementAtCapacityLimit.e.Ety);       // FSTP i[BP]
+        assert(_8087stack.used == 8);
+        _8087stack.overrideUsed(7);
+        _8087stack.push();
         if (NDPP) printf("push87() : overflow\n");
     }
     else
     {
-        if (NDPP) printf("push87(%s(%d): %d)\n", file, line, stackused);
-        stackused++;
-        assert(stackused <= 8);
+        if (NDPP) printf("push87(%s(%d): %d)\n", file, line, _8087stack.used);
+        _8087stack.push();
+        assert(_8087stack.used <= 8);
     }
-    // Shift the stack up
-    for (int i = 7; i > 0; i--)
-        _8087elems[i] = _8087elems[i - 1];
-    _8087elems[0] = ndp_zero;
 }
 
 /*****************************
@@ -281,7 +269,7 @@ void note87(elem *e, uint offset, int i)
 void note87(elem *e, uint offset, int i, int linnum)
 {
     if (NDPP)
-        printf("note87(e = %p.%d, i = %d, stackused = %d, line = %d)\n",e,offset,i,stackused,linnum);
+        printf("note87(e = %p.%d, i = %d, stackused = %d, line = %d)\n",e,offset,i,_8087stack.used,linnum);
 
     static if (0)
     {
@@ -289,17 +277,16 @@ void note87(elem *e, uint offset, int i, int linnum)
             printf("_8087elems[%d].e = %p\n",i,_8087elems[i].e);
     }
 
-    debug if (i >= stackused)
+    debug if (i >= _8087stack.used)
     {
-        printf("note87(e = %p.%d, i = %d, stackused = %d, line = %d)\n",e,offset,i,stackused,linnum);
+        printf("note87(e = %p.%d, i = %d, stackused = %d, line = %d)\n",e,offset,i,_8087stack.used,linnum);
         elem_print(e);
     }
-    assert(i < stackused);
+    assert(i < _8087stack.used);
 
     while (e.Eoper == OPcomma)
         e = e.EV.E2;
-    _8087elems[i].e = e;
-    _8087elems[i].offset = offset;
+    _8087stack.setAt(i, e, offset);
 }
 
 /****************************************************
@@ -308,11 +295,7 @@ void note87(elem *e, uint offset, int i, int linnum)
 
 void xchg87(int i, int j)
 {
-    NDP save;
-
-    save = _8087elems[i];
-    _8087elems[i] = _8087elems[j];
-    _8087elems[j] = save;
+    _8087stack.exchange(i, j);
 }
 
 /****************************
@@ -335,12 +318,12 @@ private void makesure87(ref CodeBuilder cdb,elem *e,uint offset,int i,uint flag,
         e = e.EV.E2;
     assert(e && i < 4);
 L1:
-    if (_8087elems[i].e != e || _8087elems[i].offset != offset)
+    if (_8087stack.getAt(i).e != e || _8087stack.getAt(i).offset != offset)
     {
-        debug if (_8087elems[i].e)
-            printf("_8087elems[%d].e = %p, .offset = %d\n",i,_8087elems[i].e,_8087elems[i].offset);
+        debug if (_8087stack.getAt(i).e)
+            printf("_8087stack.getAt(%d).e = %p, .offset = %d\n",i,_8087stack.getAt(i).e,_8087stack.getAt(i).offset);
 
-        assert(_8087elems[i].e == null);
+        assert(_8087stack.getAt(i).e == null);
         int j;
         for (j = 0; 1; j++)
         {
@@ -371,7 +354,7 @@ L1:
         }
         NDP.save[j] = ndp_zero;                // back in 8087
     }
-    //_8087elems[i].e = null;
+    //_8087stack.getAt(i).e = null;
 }
 
 /****************************
@@ -381,15 +364,15 @@ L1:
 void save87(ref CodeBuilder cdb)
 {
     bool any = false;
-    while (_8087elems[0].e && stackused)
+    while (_8087stack.front.e && _8087stack.used)
     {
         // Save it
         int i = getemptyslot();
-        if (NDPP) printf("saving %p in temporary NDP.save[%d]\n",_8087elems[0].e,i);
-        NDP.save[i] = _8087elems[0];
+        if (NDPP) printf("saving %p in temporary NDP.save[%d]\n",_8087stack.front.e,i);
+        NDP.save[i] = _8087stack.front;
 
         genfwait(cdb);
-        ndp_fstp(cdb,i,_8087elems[0].e.Ety); // FSTP i[BP]
+        ndp_fstp(cdb,i,_8087stack.front.e.Ety); // FSTP i[BP]
         pop87();
         any = true;
     }
@@ -405,29 +388,29 @@ void save87regs(ref CodeBuilder cdb, uint n)
 {
     assert(n <= 7);
     uint j = 8 - n;
-    if (stackused > j)
+    if (_8087stack.used > j)
     {
         for (uint k = 8; k > j; k--)
         {
             cdb.genf2(0xD9,0xF6);     // FDECSTP
             genfwait(cdb);
-            if (k <= stackused)
+            if (k <= _8087stack.used)
             {
                 int i = getemptyslot();
-                ndp_fstp(cdb, i, _8087elems[k - 1].e.Ety);   // FSTP i[BP]
-                NDP.save[i] = _8087elems[k - 1];
-                _8087elems[k - 1] = ndp_zero;
+                ndp_fstp(cdb, i, _8087stack.getAt(k - 1).e.Ety);   // FSTP i[BP]
+                NDP.save[i] = _8087stack.getAt(k - 1);
+                _8087stack.getAt(k - 1) = ndp_zero;
             }
         }
 
         for (uint k = 8; k > j; k--)
         {
-            if (k > stackused)
+            if (k > _8087stack.used)
             {   cdb.genf2(0xD9,0xF7); // FINCSTP
                 genfwait(cdb);
             }
         }
-        stackused = j;
+        _8087stack.overrideUsed(j);
     }
 }
 
@@ -469,15 +452,15 @@ private int cse_get(elem *e, uint offset)
 
     for (i = 0; 1; i++)
     {
-        if (i == stackused)
+        if (i == _8087stack.used)
         {
             i = -1;
             //printf("cse not found\n");
             //elem_print(e);
             break;
         }
-        if (_8087elems[i].e == e &&
-            _8087elems[i].offset == offset)
+        if (_8087stack.getAt(i).e == e &&
+            _8087stack.getAt(i).offset == offset)
         {   //printf("cse found %d\n",i);
             //elem_print(e);
             break;
@@ -1642,7 +1625,7 @@ void load87(ref CodeBuilder cdb,elem *e,uint eoffset,regm_t *pretregs,elem *elef
     int i;
 
     if (NDPP)
-        printf("+load87(e=%p, eoffset=%d, *pretregs=%s, eleft=%p, op=%d, stackused = %d)\n",e,eoffset,regm_str(*pretregs),eleft,op,stackused);
+        printf("+load87(e=%p, eoffset=%d, *pretregs=%s, eleft=%p, op=%d, stackused = %d)\n",e,eoffset,regm_str(*pretregs),eleft,op,_8087stack.used);
 
     assert(!(NOSAHF && op == 3));
     elem_debug(e);
@@ -1720,7 +1703,7 @@ L5:
         case OPd_ld:
             mf1 = (tybasic(e.EV.E1.Ety) == TYfloat || tybasic(e.EV.E1.Ety) == TYifloat)
                     ? MFfloat : MFdouble;
-            if (op != -1 && stackused)
+            if (op != -1 && _8087stack.used)
                 note87(eleft,eoffset,0);    // don't trash this value
             if (e.EV.E1.Eoper == OPvar || e.EV.E1.Eoper == OPind)
             {
@@ -1905,7 +1888,7 @@ L5:
     }
     fixresult87(cdb,e,((op == 3) ? mPSW : mST0),pretregs);
     if (NDPP)
-        printf("-load87(e=%p, eoffset=%d, *pretregs=%s, eleft=%p, op=%d, stackused = %d)\n",e,eoffset,regm_str(*pretregs),eleft,op,stackused);
+        printf("-load87(e=%p, eoffset=%d, *pretregs=%s, eleft=%p, op=%d, stackused = %d)\n",e,eoffset,regm_str(*pretregs),eleft,op,_8087stack.used);
 }
 
 /********************************

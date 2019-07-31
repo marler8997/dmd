@@ -1975,9 +1975,8 @@ void cdcond(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
     uint sz2;
 
     /* vars to save state of 8087 */
-    int stackusedold,stackusedsave;
-    NDP[_8087elems.length] _8087old;
-    NDP[_8087elems.length] _8087save;
+    NDPStack _8087old;
+    NDPStack _8087save;
 
     //printf("cdcond(e = %p, *pretregs = %s)\n",e,regm_str(*pretregs));
     elem *e1 = e.EV.E1;
@@ -2168,9 +2167,8 @@ void cdcond(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
     code *cnop2 = gennop(null);         // dummy target addresses
     logexp(cdb,e1,false,FLcode,cnop1);  // evaluate condition
     regconold = regcon;
-    stackusedold = stackused;
+    _8087old.copyFrom(_8087stack);
     stackpushold = stackpush;
-    memcpy(_8087old.ptr,_8087elems.ptr,_8087elems.sizeof);
     regm_t retregs = *pretregs;
     CodeBuilder cdb1;
     cdb1.ctor();
@@ -2208,11 +2206,8 @@ void cdcond(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
     stackpushsave = stackpush;
     stackpush = stackpushold;
 
-    stackusedsave = stackused;
-    stackused = stackusedold;
-
-    memcpy(_8087save.ptr,_8087elems.ptr,_8087elems.sizeof);
-    memcpy(_8087elems.ptr,_8087old.ptr,_8087elems.sizeof);
+    _8087save.copyFrom(_8087stack);
+    _8087stack.copyFrom(_8087old);
 
     retregs |= psw;                     // PSW bit may have been trashed
     CodeBuilder cdb2;
@@ -2230,9 +2225,9 @@ void cdcond(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
     *pretregs = retregs | psw;
     andregcon(&regconold);
     andregcon(&regconsave);
-    assert(stackused == stackusedsave);
+    assert(_8087stack.used == _8087save.used);
     assert(stackpush == stackpushsave);
-    memcpy(_8087elems.ptr,_8087save.ptr,_8087elems.sizeof);
+    _8087stack.copyFrom(_8087save);
     freenode(e2);
     genjmp(cdb,JMP,FLcode,cast(block *) cnop2);
     cdb.append(cnop1);
