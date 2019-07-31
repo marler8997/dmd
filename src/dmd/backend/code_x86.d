@@ -585,25 +585,24 @@ struct NDPStack
         this._used = other._used;
     }
 
-    ref NDP front() return { return _elems[0]; }
-
-    /// Get the element at the capacity limit
-    auto getElementAtCapacityLimit() { return _elems[$ - 1]; }
+    ref NDP front() return { return (_used == 0) ? ndp_zero : _elems[_used - 1]; }
 
     /// Set a specific element in the stack
     void setAt(int i, elem* e, uint offset)
     {
-        _elems[i].e = e;
-        _elems[i].offset = offset;
+        const index = length - 1 - i;
+        _elems[index].e = e;
+        _elems[index].offset = offset;
     }
 
-    ref NDP getAt(int i) return { return _elems[i]; }
+    ref NDP getAt(int i) return { return _elems[$ - 1 - i]; }
 
     void exchange(int i, int j)
     {
-        auto save = _elems[i];
-        _elems[i] = _elems[j];
-        _elems[j] = save;
+        const a = length - 1 - i, b = length - 1 - j;
+        auto save = _elems[a];
+        _elems[a] = _elems[b];
+        _elems[b] = save;
     }
 
     /// Get the current number of used elements on the stack
@@ -618,20 +617,30 @@ struct NDPStack
     void pop()
     in { assert(used >= 1); } do
     {
-        for (int i = 0; i < _elems.length - 1; i++)
-            _elems[i] = _elems[i + 1];
-        _elems[_elems.length - 1] = ndp_zero;
+        //for (int i = 0; i < _elems.length - 1; i++)
+        //    _elems[i] = _elems[i + 1];
+        //_elems[_elems.length - 1] = ndp_zero;
         _used--;
+        _elems[_used] = ndp_zero;
     }
 
     /// Push an element onto the stack
     void push()
     in { assert(used < _elems.length); } do
     {
-        for (int i = _elems.length - 1; i > 0; i--)
-            _elems[i] = _elems[i - 1];
-        _elems[0] = ndp_zero;
+        //for (int i = _elems.length - 1; i > 0; i--)
+        //    _elems[i] = _elems[i - 1];
+        _elems[_used] = ndp_zero;
         _used++;
+    }
+
+    /// Drop the oldest element off the stack
+    void drop()
+    {
+        for (int i = 0; i < _used - 1; i++)
+            _elems[i] = _elems[i + 1];
+        _used--;
+        _elems[_used] = ndp_zero;
     }
 }
 extern __gshared { NDPStack _8087stack; NDP ndp_zero; }

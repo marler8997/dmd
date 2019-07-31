@@ -237,15 +237,14 @@ void push87(ref CodeBuilder cdb) { push87(cdb,__LINE__,__FILE__); }
 void push87(ref CodeBuilder cdb, int line, const(char)* file)
 {
     // if we would lose the top register off of the stack
-    if (_8087stack.getElementAtCapacityLimit.e != null)
+    if (_8087stack.used == 8)
     {
         int i = getemptyslot();
-        NDP.save[i] = _8087stack.getElementAtCapacityLimit;
+        NDP.save[i] = _8087stack.getAt(0);
         cdb.genf2(0xD9,0xF6);                         // FDECSTP
         genfwait(cdb);
-        ndp_fstp(cdb, i, _8087stack.getElementAtCapacityLimit.e.Ety);       // FSTP i[BP]
-        assert(_8087stack.used == 8);
-        _8087stack.overrideUsed(7);
+        ndp_fstp(cdb, i, _8087stack.getAt(0).e.Ety);       // FSTP i[BP]
+        _8087stack.drop();
         _8087stack.push();
         if (NDPP) printf("push87() : overflow\n");
     }
