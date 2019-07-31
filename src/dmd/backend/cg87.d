@@ -3646,6 +3646,25 @@ void fixresult_complex87(ref CodeBuilder cdb,elem *e,regm_t retregs,regm_t *pret
         cdb.genf2(0xDD,modregrm(3,3,0));        // FPOP
         pop87();
     }
+    else if (tym == TYllong)
+    {
+        assert(retregs & mST01, "this float expression is not implemented");
+        if (!(*pretregs & mCX))
+        {
+            printf("*pretregs = %d is not implemented\n", *pretregs);
+            assert(0, "moving cfloat to register other than CX is not implemented");
+        }
+        pop87();
+        cdb.genfltreg(ESC(MFfloat,1),BX,0);      // FSTP floatreg
+        genfwait(cdb);
+        getregs(cdb,mCX);
+        cdb.genfltreg(LOD, CX, 0);              // MOV RCX,floatreg
+
+        pop87();
+        cdb.genfltreg(ESC(MFfloat,1),BX,0);      // FSTP floatreg
+        genfwait(cdb);
+        cdb.genfltreg(LOD, CX, 0);              // MOV RCX,floatreg
+    }
     else if (tym == TYcfloat && *pretregs & (mAX|mDX) && retregs & mST01)
     {
         if (*pretregs & mPSW && !(retregs & mPSW))
