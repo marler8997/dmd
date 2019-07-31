@@ -218,7 +218,7 @@ tryagain:
     STACKALIGN = TARGET_STACKALIGN;
 
     regsave.reset();
-    memset(_8087elems.ptr,0,_8087elems.sizeof);
+    memset(_8087elems2.ptr,0,_8087elems2.sizeof);
 
     calledFinally = false;
     usednteh = 0;
@@ -243,7 +243,8 @@ tryagain:
     sfunc.Sfunc.Fflags3 |= Fnothrow;
 
     floatreg = false;
-    assert(stackused == 0);             /* nobody in 8087 stack         */
+    assert(stackused2 == 0);             /* nobody in 8087 stack         */
+    printf("cgcod: start\n");fflush(stdout);
 
     CSE.start();
     memset(&regcon,0,regcon.sizeof);
@@ -687,11 +688,13 @@ tryagain:
     // BUG: do interrupt functions save BP?
     sfunc.Sregsaved = (functy == TYifunc) ? cast(regm_t) mBP : (mfuncreg | fregsaved);
 
-    debug
-    if (stackused != 0)
-      printf("stackused = %d\n",stackused);
-
-    assert(stackused == 0);             /* nobody in 8087 stack         */
+    //debug
+    if (stackused2 != 0) {
+      //assert(0, "here?");
+      printf("cgcod: stackused = %d!!!!\n", stackused2);
+      fflush(stdout);
+      assert(stackused2 == 0);             /* nobody in 8087 stack         */
+    }
 
     /* Clean up ndp save array  */
     mem_free(NDP.save);

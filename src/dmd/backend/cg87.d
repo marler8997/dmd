@@ -70,11 +70,12 @@ enum
 
 __gshared
 {
-    NDP[8] _8087elems;              // 8087 stack
+    NDP[8] _8087elems2;              // 8087 stack
     NDP ndp_zero;
 
-    int stackused = 0;              // number of items on the 8087 stack
+    int stackused2 = 0;              // number of items on the 8087 stack
 }
+alias _8087elems = _8087elems2;
 
 /*********************************
  */
@@ -137,6 +138,7 @@ private void getlvalue87(ref CodeBuilder cdb,code *pcs,elem *e,regm_t keepmsk)
 
 private void ndp_fstp(ref CodeBuilder cdb, int i, tym_t ty)
 {
+    indent();printf("ndp_fstp i=%d ty=%d basic=%d\n", i, ty, tybasic(ty));fflush(stdout);
     switch (tybasic(ty))
     {
         case TYfloat:
@@ -159,6 +161,16 @@ private void ndp_fstp(ref CodeBuilder cdb, int i, tym_t ty)
             break;
 
         default:
+            printf("TYfloat = %d\n", TYfloat);
+            printf("TYifloat = %d\n", TYifloat);
+            printf("TYcfloat = %d\n", TYcfloat);
+            printf("TYdouble = %d\n", TYdouble);
+            printf("TYdouble_alias = %d\n", TYdouble_alias);
+            printf("TYidouble = %d\n", TYidouble);
+            printf("TYcdouble = %d\n", TYcdouble);
+            printf("TYldouble = %d\n", TYldouble);
+            printf("TYildouble = %d\n", TYildouble);
+            printf("TYcldouble = %d\n", TYcldouble);fflush(stdout);
             assert(0);
     }
 }
@@ -219,21 +231,21 @@ L1: if (i >= NDP.savetop)
  * Pop 8087 stack.
  */
 
-void pop87() { pop87(__LINE__, __FILE__); }
+void pop87(const(char)* file = __FILE__.ptr, int line = __LINE__) { pop87(line, file); }
 
 void pop87(int line, const(char)* file)
 {
     int i;
 
-    if (NDPP)
-        printf("pop87(%s(%d): stackused=%d)\n", file, line, stackused);
+    if (true)
+        {indent(); printf("pop87(%s(%d): stackused=%d > %d)\n", file, line, stackused2, stackused2 - 1); }
 
-    --stackused;
-    assert(stackused >= 0);
-    for (i = 0; i < _8087elems.length - 1; i++)
-        _8087elems[i] = _8087elems[i + 1];
+    --stackused2;
+    assert(stackused2 >= 0);
+    for (i = 0; i < _8087elems2.length - 1; i++)
+        _8087elems2[i] = _8087elems2[i + 1];
     // end of stack is nothing
-    _8087elems[_8087elems.length - 1] = ndp_zero;
+    _8087elems2[_8087elems2.length - 1] = ndp_zero;
 }
 
 
@@ -242,31 +254,31 @@ void pop87(int line, const(char)* file)
  * necessary to preserve anything that might run off the end of the stack.
  */
 
-void push87(ref CodeBuilder cdb) { push87(cdb,__LINE__,__FILE__); }
+void push87(ref CodeBuilder cdb, const(char)* file = __FILE__.ptr, int line = __LINE__) { push87(cdb,line,file); }
 
 void push87(ref CodeBuilder cdb, int line, const(char)* file)
 {
     // if we would lose the top register off of the stack
-    if (_8087elems[7].e != null)
+    if (_8087elems2[7].e != null)
     {
         int i = getemptyslot();
-        NDP.save[i] = _8087elems[7];
+        NDP.save[i] = _8087elems2[7];
         cdb.genf2(0xD9,0xF6);                         // FDECSTP
         genfwait(cdb);
-        ndp_fstp(cdb, i, _8087elems[7].e.Ety);       // FSTP i[BP]
-        assert(stackused == 8);
-        if (NDPP) printf("push87() : overflow\n");
+        ndp_fstp(cdb, i, _8087elems2[7].e.Ety);       // FSTP i[BP]
+        assert(stackused2 == 8);
+        if (true) printf("push87() : overflow\n");
     }
     else
     {
-        if (NDPP) printf("push87(%s(%d): %d)\n", file, line, stackused);
-        stackused++;
-        assert(stackused <= 8);
+        if (true) {indent(); printf("push87(%s(%d): stackused %d > %d)\n", file, line, stackused2, stackused2 + 1); }
+        stackused2++;
+        assert(stackused2 <= 8);
     }
     // Shift the stack up
     for (int i = 7; i > 0; i--)
-        _8087elems[i] = _8087elems[i - 1];
-    _8087elems[0] = ndp_zero;
+        _8087elems2[i] = _8087elems2[i - 1];
+    _8087elems2[0] = ndp_zero;
 }
 
 /*****************************
@@ -280,8 +292,8 @@ void note87(elem *e, uint offset, int i)
 
 void note87(elem *e, uint offset, int i, int linnum)
 {
-    if (NDPP)
-        printf("note87(e = %p.%d, i = %d, stackused = %d, line = %d)\n",e,offset,i,stackused,linnum);
+    if (true)
+        {indent();printf("note87(e = %p.%d, i = %d, stackused = %d, line = %d)\n",e,offset,i,stackused2,linnum);}
 
     static if (0)
     {
@@ -289,12 +301,12 @@ void note87(elem *e, uint offset, int i, int linnum)
             printf("_8087elems[%d].e = %p\n",i,_8087elems[i].e);
     }
 
-    debug if (i >= stackused)
+    debug if (i >= stackused2)
     {
-        printf("note87(e = %p.%d, i = %d, stackused = %d, line = %d)\n",e,offset,i,stackused,linnum);
+        printf("note87(e = %p.%d, i = %d, stackused = %d, line = %d)\n",e,offset,i,stackused2,linnum);
         elem_print(e);
     }
-    assert(i < stackused);
+    assert(i < stackused2);
 
     while (e.Eoper == OPcomma)
         e = e.EV.E2;
@@ -329,7 +341,9 @@ private void makesure87(ref CodeBuilder cdb,elem *e,uint offset,int i,uint flag)
 
 private void makesure87(ref CodeBuilder cdb,elem *e,uint offset,int i,uint flag,int linnum)
 {
-    debug if (NDPP) printf("makesure87(e=%p, offset=%d, i=%d, flag=%d, line=%d)\n",e,offset,i,flag,linnum);
+    enter("makesure87");
+    scope (exit) exit("makesure87");
+    if (true) {indent();printf("makesure87(e=%p, offset=%d, i=%d, flag=%d, line=%d)\n",e,offset,i,flag,linnum);}
 
     while (e.Eoper == OPcomma)
         e = e.EV.E2;
@@ -337,8 +351,7 @@ private void makesure87(ref CodeBuilder cdb,elem *e,uint offset,int i,uint flag,
 L1:
     if (_8087elems[i].e != e || _8087elems[i].offset != offset)
     {
-        debug if (_8087elems[i].e)
-            printf("_8087elems[%d].e = %p, .offset = %d\n",i,_8087elems[i].e,_8087elems[i].offset);
+        indent();printf("_8087elems[%d].e = %p, .offset = %d\n",i,_8087elems[i].e,_8087elems[i].offset);
 
         assert(_8087elems[i].e == null);
         int j;
@@ -350,11 +363,11 @@ L1:
                 goto L1;
             }
 
-            debug if (j >= NDP.savetop)
+            if (j >= NDP.savetop)
                 printf("e = %p, NDP.savetop = %d\n",e,NDP.savetop);
 
             assert(j < NDP.savetop);
-            //printf("\tNDP.save[%d] = %p, .offset = %d\n", j, NDP.save[j].e, NDP.save[j].offset);
+            indent();printf("\tNDP.save[%d] = %p, .offset = %d\n", j, NDP.save[j].e, NDP.save[j].offset);
             if (e == NDP.save[j].e && offset == NDP.save[j].offset)
                 break;
         }
@@ -369,6 +382,7 @@ L1:
                 i--;
             }
         }
+        indent();printf("NDP.save[%d] set to 0!\n", j);
         NDP.save[j] = ndp_zero;                // back in 8087
     }
     //_8087elems[i].e = null;
@@ -378,18 +392,30 @@ L1:
  * Save in memory any values in the 8087 that we want to keep.
  */
 
-void save87(ref CodeBuilder cdb)
+void save87(ref CodeBuilder cdb, int line = __LINE__)
 {
+    //enter("save87");
+    indent();printf("> save87 (line=%d, stackused=%d)\n", line, stackused2); currentIndent+=4;
+    fflush(stdout);
+    scope(exit) exit("save87");
     bool any = false;
-    while (_8087elems[0].e && stackused)
+    while (_8087elems[0].e && stackused2)
     {
-        // Save it
-        int i = getemptyslot();
-        if (NDPP) printf("saving %p in temporary NDP.save[%d]\n",_8087elems[0].e,i);
-        NDP.save[i] = _8087elems[0];
-
-        genfwait(cdb);
-        ndp_fstp(cdb,i,_8087elems[0].e.Ety); // FSTP i[BP]
+        if (_8087elems2[0].e)
+        {
+            // Save it
+            const i = getemptyslot();
+            if (true) {indent();printf("saving %p in temporary NDP.save[%d]\n",_8087elems[0].e,i);}
+            NDP.save[i] = _8087elems[0];
+            genfwait(cdb);
+            ndp_fstp(cdb,i,_8087elems[0].e.Ety); // FSTP i[BP]
+        }
+        else
+        {
+            //NDP.save[i] = ndp_zero;
+            //genfwait(cdb);
+            //ndp_fstp(cdb,i,_8087elems[0].e.Ety); // FSTP i[BP]
+        }
         pop87();
         any = true;
     }
@@ -405,13 +431,13 @@ void save87regs(ref CodeBuilder cdb, uint n)
 {
     assert(n <= 7);
     uint j = 8 - n;
-    if (stackused > j)
+    if (stackused2 > j)
     {
         for (uint k = 8; k > j; k--)
         {
             cdb.genf2(0xD9,0xF6);     // FDECSTP
             genfwait(cdb);
-            if (k <= stackused)
+            if (k <= stackused2)
             {
                 int i = getemptyslot();
                 ndp_fstp(cdb, i, _8087elems[k - 1].e.Ety);   // FSTP i[BP]
@@ -422,12 +448,12 @@ void save87regs(ref CodeBuilder cdb, uint n)
 
         for (uint k = 8; k > j; k--)
         {
-            if (k > stackused)
+            if (k > stackused2)
             {   cdb.genf2(0xD9,0xF7); // FINCSTP
                 genfwait(cdb);
             }
         }
-        stackused = j;
+        stackused2 = j;
     }
 }
 
@@ -465,11 +491,13 @@ void gensaverestore87(regm_t regm, ref CodeBuilder cdbsave, ref CodeBuilder cdbr
 
 private int cse_get(elem *e, uint offset)
 {
+    enter("cse_get");
+    scope (exit) exit("cse_get");
     int i;
 
     for (i = 0; 1; i++)
     {
-        if (i == stackused)
+        if (i == stackused2)
         {
             i = -1;
             //printf("cse not found\n");
@@ -483,6 +511,7 @@ private int cse_get(elem *e, uint offset)
             break;
         }
     }
+    indent();printf("cse_get returns %d\n", i);
     return i;
 }
 
@@ -957,7 +986,9 @@ __gshared const ubyte[9] oprev = [ cast(ubyte)-1,0,1,2,3,5,4,7,6 ];
 
 void orth87(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
 {
-    //printf("orth87(+e = %p, *pretregs = %s)\n", e, regm_str(*pretregs));
+    enter("orth87");
+    scope (exit) exit("orth87");
+    indent();printf("orth87(+e = %p, *pretregs = %s)\n", e, regm_str(*pretregs));
     // we could be evaluating / for side effects only
     assert(*pretregs != 0);
 
@@ -984,6 +1015,8 @@ void orth87(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
         eoper = OPeqeq;
     bool imaginary;
     static uint X(OPER op, uint ty1, uint ty2) { return (op << 16) + ty1 * 256 + ty2; }
+    indent();printf("ortho: op=%d ty1=%d ty2=%d\n", eoper, e1.Ety, e2.Ety);
+    fflush(stdout);
     switch (X(eoper, tybasic(e1.Ety), tybasic(e2.Ety)))
     {
         case X(OPadd, TYfloat, TYfloat):
@@ -1343,6 +1376,7 @@ void orth87(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
         case X(OPmul, TYcfloat, TYfloat):
         case X(OPmul, TYcdouble, TYdouble):
         case X(OPmul, TYcldouble, TYldouble):
+            indent();printf("ortho case case X(OPmul, TYcfloat, TYfloat)\n");fflush(stdout);
             imaginary = false;
             goto Lcmul;
 
@@ -1352,6 +1386,7 @@ void orth87(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
             imaginary = true;
         Lcmul:
         {
+            indent();printf("ortho Lcmul\n");fflush(stdout);
             loadComplex(cdb,e1);
             if (imaginary)
             {
@@ -1586,6 +1621,8 @@ void orth87(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
 
 private void loadComplex(ref CodeBuilder cdb,elem *e)
 {
+    enter("loadComplex");
+    scope(exit)exit("loadComplex");
     regm_t retregs;
 
     int sz = tysize(e.Ety);
@@ -1642,7 +1679,7 @@ void load87(ref CodeBuilder cdb,elem *e,uint eoffset,regm_t *pretregs,elem *elef
     int i;
 
     if (NDPP)
-        printf("+load87(e=%p, eoffset=%d, *pretregs=%s, eleft=%p, op=%d, stackused = %d)\n",e,eoffset,regm_str(*pretregs),eleft,op,stackused);
+        printf("+load87(e=%p, eoffset=%d, *pretregs=%s, eleft=%p, op=%d, stackused = %d)\n",e,eoffset,regm_str(*pretregs),eleft,op,stackused2);
 
     assert(!(NOSAHF && op == 3));
     elem_debug(e);
@@ -1720,7 +1757,7 @@ L5:
         case OPd_ld:
             mf1 = (tybasic(e.EV.E1.Ety) == TYfloat || tybasic(e.EV.E1.Ety) == TYifloat)
                     ? MFfloat : MFdouble;
-            if (op != -1 && stackused)
+            if (op != -1 && stackused2)
                 note87(eleft,eoffset,0);    // don't trash this value
             if (e.EV.E1.Eoper == OPvar || e.EV.E1.Eoper == OPind)
             {
@@ -1905,7 +1942,7 @@ L5:
     }
     fixresult87(cdb,e,((op == 3) ? mPSW : mST0),pretregs);
     if (NDPP)
-        printf("-load87(e=%p, eoffset=%d, *pretregs=%s, eleft=%p, op=%d, stackused = %d)\n",e,eoffset,regm_str(*pretregs),eleft,op,stackused);
+        printf("-load87(e=%p, eoffset=%d, *pretregs=%s, eleft=%p, op=%d, stackused = %d)\n",e,eoffset,regm_str(*pretregs),eleft,op,stackused2);
 }
 
 /********************************
@@ -2087,6 +2124,8 @@ void eq87(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
 
 void complex_eq87(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
 {
+    enter("complex_eq87");
+    scope(exit) exit("complex_eq87");
     code cs;
     opcode_t op1;
     uint op2;
@@ -3440,6 +3479,8 @@ void neg_complex87(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
 
 void cdind87(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
 {
+    enter("cdind87");
+    scope (exit) exit("cdind87");
     //printf("cdind87(e = %p, *pretregs = %s)\n",e,regm_str(*pretregs));
     code cs;
 
@@ -3629,7 +3670,10 @@ private void genctst(ref CodeBuilder cdb,elem *e,int pop)
 
 void fixresult_complex87(ref CodeBuilder cdb,elem *e,regm_t retregs,regm_t *pretregs)
 {
-    static if (0)
+    enter("fixresult_complex87");
+    scope(exit) exit("fixresult_complex87");
+    static if (1)
+
     {
         printf("fixresult_complex87(e = %p, retregs = %s, *pretregs = %s)\n",
             e,regm_str(retregs),regm_str(*pretregs));
@@ -3639,8 +3683,9 @@ void fixresult_complex87(ref CodeBuilder cdb,elem *e,regm_t retregs,regm_t *pret
     tym_t tym = tybasic(e.Ety);
     uint sz = _tysize[tym];
 
-    if (*pretregs == 0 && retregs == mST01)
+    if ((*pretregs == 0 || *pretregs == mCX) && retregs == mST01)
     {
+        printf("A\n");
         cdb.genf2(0xDD,modregrm(3,3,0));        // FPOP
         pop87();
         cdb.genf2(0xDD,modregrm(3,3,0));        // FPOP
@@ -3648,6 +3693,7 @@ void fixresult_complex87(ref CodeBuilder cdb,elem *e,regm_t retregs,regm_t *pret
     }
     else if (tym == TYcfloat && *pretregs & (mAX|mDX) && retregs & mST01)
     {
+        printf("B\n");
         if (*pretregs & mPSW && !(retregs & mPSW))
             genctst(cdb,e,0);                   // FTST
         pop87();
@@ -3663,6 +3709,7 @@ void fixresult_complex87(ref CodeBuilder cdb,elem *e,regm_t retregs,regm_t *pret
     }
     else if (tym == TYcfloat && retregs & (mAX|mDX) && *pretregs & mST01)
     {
+        printf("C\n");
         push87(cdb);
         cdb.genfltreg(STO, AX, 0);              // MOV floatreg, EAX
         cdb.genfltreg(0xD9, 0, 0);              // FLD float ptr floatreg
@@ -3677,6 +3724,7 @@ void fixresult_complex87(ref CodeBuilder cdb,elem *e,regm_t retregs,regm_t *pret
     else if ((tym == TYcfloat || tym == TYcdouble) &&
              *pretregs & (mXMM0|mXMM1) && retregs & mST01)
     {
+        printf("D\n");
         tym_t tyf = tym == TYcfloat ? TYfloat : TYdouble;
         uint xop = xmmload(tyf);
         uint mf = tyf == TYfloat ? MFfloat : MFdouble;
@@ -3696,6 +3744,7 @@ void fixresult_complex87(ref CodeBuilder cdb,elem *e,regm_t retregs,regm_t *pret
     else if ((tym == TYcfloat || tym == TYcdouble) &&
              retregs & (mXMM0|mXMM1) && *pretregs & mST01)
     {
+        printf("E\n");
         tym_t tyf = tym == TYcfloat ? TYfloat : TYdouble;
         uint xop = xmmstore(tyf);
         uint fop = tym == TYcfloat ? 0xD9 : 0xDD;
@@ -3712,7 +3761,9 @@ void fixresult_complex87(ref CodeBuilder cdb,elem *e,regm_t retregs,regm_t *pret
             genctst(cdb,e,0);                   // FTST
     }
     else
-    {   if (*pretregs & mPSW)
+    {
+        printf("F\n");
+        if (*pretregs & mPSW)
         {   if (!(retregs & mPSW))
             {   assert(retregs & mST01);
                 genctst(cdb,e,!(*pretregs & mST01));        // FTST
@@ -3720,9 +3771,21 @@ void fixresult_complex87(ref CodeBuilder cdb,elem *e,regm_t retregs,regm_t *pret
         }
         assert(!(*pretregs & mST01) || (retregs & mST01));
     }
-    if (*pretregs & mST01)
+    printf("retregs = 0x%x (ST01=0x%x) *pretregs=0x%x (CX=0x%x)\n",
+        retregs, ST01, *pretregs, CX);
+    if (retregs & mST01)
+        printf("HERE1\n");
+    if (*pretregs & mCX)
+        printf("HERE2\n");
+    printf("2 fixresult_complex87(e = %p, retregs = %s, *pretregs = %s)\n",
+        e,regm_str(retregs),regm_str(*pretregs));
+    if (*pretregs & mST01/* || ( (retregs & mST01) && (*pretregs & mCX) ) */)
     {   note87(e,0,1);
         note87(e,sz/2,0);
+    }
+    if (*pretregs & mCX)
+    {
+        
     }
 }
 
@@ -3753,12 +3816,16 @@ void cdconvt87(ref CodeBuilder cdb, elem *e, regm_t *pretregs)
     fixresult87(cdb, e, retregs, pretregs);
 }
 
+__gshared int currentIndent = 0;
+
 /**************************************
  * Load complex operand into ST01 or flags or both.
  */
 
 void cload87(ref CodeBuilder cdb, elem *e, regm_t *pretregs)
 {
+    enter("cload87");
+    scope (exit) exit("cload87");
     //printf("e = %p, *pretregs = %s)\n", e, regm_str(*pretregs));
     //elem_print(e);
     assert(!I16);

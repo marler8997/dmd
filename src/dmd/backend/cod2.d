@@ -1976,8 +1976,8 @@ void cdcond(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
 
     /* vars to save state of 8087 */
     int stackusedold,stackusedsave;
-    NDP[_8087elems.length] _8087old;
-    NDP[_8087elems.length] _8087save;
+    NDP[_8087elems2.length] _8087old;
+    NDP[_8087elems2.length] _8087save;
 
     //printf("cdcond(e = %p, *pretregs = %s)\n",e,regm_str(*pretregs));
     elem *e1 = e.EV.E1;
@@ -2168,9 +2168,9 @@ void cdcond(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
     code *cnop2 = gennop(null);         // dummy target addresses
     logexp(cdb,e1,false,FLcode,cnop1);  // evaluate condition
     regconold = regcon;
-    stackusedold = stackused;
+    stackusedold = stackused2;
     stackpushold = stackpush;
-    memcpy(_8087old.ptr,_8087elems.ptr,_8087elems.sizeof);
+    memcpy(_8087old.ptr,_8087elems2.ptr,_8087elems2.sizeof);
     regm_t retregs = *pretregs;
     CodeBuilder cdb1;
     cdb1.ctor();
@@ -2208,11 +2208,12 @@ void cdcond(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
     stackpushsave = stackpush;
     stackpush = stackpushold;
 
-    stackusedsave = stackused;
-    stackused = stackusedold;
+    stackusedsave = stackused2;
+    printf("cod2: stackused %d > %d\n", stackused2, stackusedold);
+    stackused2 = stackusedold;
 
-    memcpy(_8087save.ptr,_8087elems.ptr,_8087elems.sizeof);
-    memcpy(_8087elems.ptr,_8087old.ptr,_8087elems.sizeof);
+    memcpy(_8087save.ptr,_8087elems2.ptr,_8087elems2.sizeof);
+    memcpy(_8087elems2.ptr,_8087old.ptr,_8087elems2.sizeof);
 
     retregs |= psw;                     // PSW bit may have been trashed
     CodeBuilder cdb2;
@@ -2230,9 +2231,9 @@ void cdcond(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
     *pretregs = retregs | psw;
     andregcon(&regconold);
     andregcon(&regconsave);
-    assert(stackused == stackusedsave);
+    assert(stackused2 == stackusedsave);
     assert(stackpush == stackpushsave);
-    memcpy(_8087elems.ptr,_8087save.ptr,_8087elems.sizeof);
+    memcpy(_8087elems2.ptr,_8087save.ptr,_8087elems2.sizeof);
     freenode(e2);
     genjmp(cdb,JMP,FLcode,cast(block *) cnop2);
     cdb.append(cnop1);
@@ -2886,6 +2887,8 @@ version (SCPP)
 
 void cdind(ref CodeBuilder cdb,elem *e,regm_t *pretregs)
 {
+    enter("cdind");
+    scope (exit) exit("cdind");
     regm_t retregs;
     reg_t reg;
     uint nreg;

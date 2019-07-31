@@ -1150,11 +1150,11 @@ static if (NTEXCEPTIONS)
             gencodelem(cdb,e,&retregs,true);
         L4:
             if (retregs == mST0)
-            {   assert(stackused == 1);
+            {   assert(stackused2 == 1);
                 pop87();                // account for return value
             }
             else if (retregs == mST01)
-            {   assert(stackused == 2);
+            {   assert(stackused2 == 2);
                 pop87();
                 pop87();                // account for return value
             }

@@ -562,7 +562,7 @@ struct NDP
     __gshared int savetop;         // # of entries used in save[]
 }
 
-extern __gshared NDP[8] _8087elems;
+extern __gshared NDP[8] _8087elems2;
 
 void getlvalue_msw(code *);
 void getlvalue_lsw(code *);

@@ -757,7 +757,7 @@ auto sourceFiles()
             bcomplex.d evalu8.d divcoeff.d dvec.d go.d gsroa.d glocal.d gdag.d gother.d gflow.d
             out.d
             gloop.d compress.d cgelem.d cgcs.d ee.d cod4.d cod5.d nteh.d blockopt.d mem.d cg.d cgreg.d
-            dtype.d debugprint.d fp.d symbol.d elem.d dcode.d cgsched.d cg87.d cgxmm.d cgcod.d cod1.d cod2.d
+            dtype.d debugprint.d fp.d symbol.d elem.d dcode.d cgsched.d cg87.d cgxmm.d code.d cgcod.d cod1.d cod2.d
             cod3.d cv8.d dcgcv.d pdata.d util2.d var.d md5.d backconfig.d ph2.d drtlsym.d dwarfeh.d ptrntab.d
             dvarstats.d dwarfdbginf.d cgen.d os.d goh.d barray.d cgcse.d elpicpie.d
             ".split
@@ -765,7 +765,7 @@ auto sourceFiles()
             ~ ( (env["OS"] == "windows") ? "cgobj.d filespec.d mscoffobj.d newman.d".split : ["aarray.d"] )
         ).map!(e => env["C"].buildPath(e)).array,
         backendHeaders: "
-            cc.d cdef.d cgcv.d code.d cv4.d dt.d el.d global.d
+            cc.d cdef.d cgcv.d cv4.d dt.d el.d global.d
             obj.d oper.d outbuf.d rtlsym.d code_x86.d iasm.d codebuilder.d
             ty.d type.d exh.d mach.d mscoff.d dwarf.d dwarf2.d xmm.d
             dlist.d melf.d varstats.di

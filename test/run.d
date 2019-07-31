@@ -32,7 +32,7 @@ enum TestTools
     unitTestRunner = TestTool("unit_test_runner", [toolsDir.buildPath("paths")]),
     testRunner = TestTool("d_do_test"),
     jsonSanitizer = TestTool("sanitize_json"),
-    dshellPrebuilt = TestTool("dshell_prebuilt", null, Yes.linksWithTests),
+    //dshellPrebuilt = TestTool("dshell_prebuilt", null, Yes.linksWithTests),
 }
 
 immutable struct TestTool

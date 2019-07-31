@@ -614,9 +614,9 @@ void checkSetVex(code *c, tym_t ty);
 /* cg87.c */
 void note87(elem *e, uint offset, int i);
 void pop87(int, const(char)*);
-void pop87();
-void push87(ref CodeBuilder cdb);
-void save87(ref CodeBuilder cdb);
+void pop87(const(char)* = __FILE__.ptr, int = __LINE__);
+void push87(ref CodeBuilder cdb, const(char)* = __FILE__.ptr, int = __LINE__);
+void save87(ref CodeBuilder cdb, int line = __LINE__);
 void save87regs(ref CodeBuilder cdb, uint n);
 void gensaverestore87(regm_t, ref CodeBuilder cdbsave, ref CodeBuilder cdbrestore);
 //code *genfltreg(code *c,opcode_t opcode,uint reg,targ_size_t offset);
@@ -636,7 +636,7 @@ void cnvt87(ref CodeBuilder cdb, elem *e , regm_t *pretregs );
 void neg87(ref CodeBuilder cdb, elem *e , regm_t *pretregs);
 void neg_complex87(ref CodeBuilder cdb, elem *e, regm_t *pretregs);
 void cdind87(ref CodeBuilder cdb,elem *e,regm_t *pretregs);
-extern __gshared { int stackused; }
+extern __gshared { int stackused2; }
 void cload87(ref CodeBuilder cdb, elem *e, regm_t *pretregs);
 void cdd_u64(ref CodeBuilder cdb, elem *e, regm_t *pretregs);
 void cdd_u32(ref CodeBuilder cdb, elem *e, regm_t *pretregs);
@@ -646,6 +646,29 @@ void loadPair87(ref CodeBuilder cdb, elem *e, regm_t *pretregs);
 //void iasm_term();
 regm_t iasm_regs(block *bp);
 
+extern __gshared int currentIndent;
+import core.stdc.stdio : printf, fflush, stdout;
+void indent() { foreach (i; 0 .. currentIndent) printf(" "); }
+void enter(const char* fun) { indent(); printf("> %s:", fun); printStackInline(); printf("\n");fflush(stdout); currentIndent += 4; }
+void exit(const char* fun) { currentIndent -= 4; indent();  printf("< %s:", fun); printStackInline(); printf("\n");fflush(stdout); }
+void printStackInline()
+{
+    printf("STACK(%d)", stackused2);
+    foreach (i; 0 .. _8087elems2.length)
+    {
+        if (_8087elems2[i].e)
+        {
+            printf(" %d", i);
+        }
+    }
+}
+void printStack()
+{
+    indent();
+    printStackInline();
+    printf("\n");
+    fflush(stdout);
+}
 
 /**********************************
  * Set value in regimmed for reg.
