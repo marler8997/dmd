@@ -44,7 +44,7 @@ nothrow:
  * String together as many blocks as we can.
  */
 
-public extern (C++) void comsubs()
+public void comsubs()
 {
     //static int xx;
     //printf("comsubs() %d\n", ++xx);
@@ -113,7 +113,7 @@ public extern (C++) void comsubs()
 /*******************************
  */
 
-public extern (C++) void cgcs_term()
+public void cgcs_term()
 {
     vec_free(csvec);
     csvec = null;

@@ -44,8 +44,6 @@ nothrow:
 
 char symbol_isintab(Symbol *s) { return sytab[s.Sclass] & SCSS; }
 
-extern (C++):
-
 version (SCPP)
     import parser;
 

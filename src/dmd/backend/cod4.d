@@ -36,8 +36,6 @@ import dmd.backend.ty;
 import dmd.backend.evalu8 : el_toldoubled;
 import dmd.backend.xmm;
 
-extern (C++):
-
 nothrow:
 
 int REGSIZE();

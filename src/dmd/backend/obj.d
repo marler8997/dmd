@@ -22,8 +22,6 @@ import dmd.backend.code;
 import dmd.backend.el;
 import dmd.backend.outbuf;
 
-extern (C++):
-
 nothrow:
 
 version (Windows)

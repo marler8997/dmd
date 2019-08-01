@@ -19,7 +19,6 @@ import dmd.backend.ty : I32;
 
 import dmd.backend.dlist;
 
-extern (C++):
 @nogc:
 nothrow:
 

@@ -49,8 +49,6 @@ version (SCPP_HTOD)
     import precomp;
 }
 
-extern (C++):
-
 nothrow:
 
 alias MEM_PH_MALLOC = mem_malloc;

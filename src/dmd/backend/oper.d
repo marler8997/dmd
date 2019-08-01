@@ -13,7 +13,6 @@ module dmd.backend.oper;
 
 // Online documentation: https://dlang.org/phobos/dmd_backend_oper.html
 
-extern (C++):
 @nogc:
 nothrow:
 
@@ -647,7 +646,7 @@ immutable ubyte[OPMAX] opcost =
     return tab;
 } ();
 
-extern (C++) __gshared const(char)*[OPMAX] debtab =
+__gshared const(char)*[OPMAX] debtab =
 [
     OPunde:    "unde",
     OPadd:     "+",

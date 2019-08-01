@@ -17,7 +17,7 @@ import core.stdc.string;
 
 nothrow:
 
-extern (C++): void err_nomem();
+void err_nomem();
 
 /*************************************
  * A reusable array that ratchets up in capacity.

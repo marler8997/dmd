@@ -20,8 +20,6 @@ import core.stdc.string;
 
 // (This used to be called OutBuffer, renamed to avoid name conflicts with Mars.)
 
-extern (C++):
-
 private nothrow void err_nomem();
 
 struct Outbuffer

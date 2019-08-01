@@ -21,8 +21,6 @@ import core.stdc.string;
 import dmd.backend.cc;
 import dmd.backend.global;
 
-extern (C++):
-
 nothrow:
 
 /**********************************************

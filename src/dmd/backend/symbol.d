@@ -60,8 +60,6 @@ version (SCPP_HTOD)
 }
 
 
-extern (C++):
-
 nothrow:
 
 alias MEM_PH_MALLOC = mem_malloc;

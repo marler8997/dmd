@@ -58,8 +58,6 @@ else static if (NTEXCEPTIONS)
 else
     enum SCPP_OR_NTEXCEPTIONS = false;
 
-extern(C++):
-
 nothrow:
 
 

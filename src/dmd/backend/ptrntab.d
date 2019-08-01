@@ -5787,7 +5787,7 @@ immutable OP[] optab =
 /*******************************
  */
 
-extern (C++) const(char)* asm_opstr(OP *pop)
+const(char)* asm_opstr(OP *pop)
 {
     return pop.str;
 }
@@ -5795,7 +5795,7 @@ extern (C++) const(char)* asm_opstr(OP *pop)
 /*******************************
  */
 
-extern (C++) OP *asm_op_lookup(const(char)* s)
+OP *asm_op_lookup(const(char)* s)
 {
     int i;
     char[20] szBuf = void;
@@ -5815,7 +5815,7 @@ extern (C++) OP *asm_op_lookup(const(char)* s)
 /*******************************
  */
 
-extern (C++) void init_optab()
+void init_optab()
 {   int i;
 
     debug

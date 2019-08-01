@@ -18,8 +18,6 @@ module dmd.backend.varstats;
 import dmd.backend.cc;
 import dmd.backend.cdef;
 
-extern (C++):
-
 nothrow:
 
 // estimate of variable life time

@@ -40,8 +40,6 @@ import dmd.backend.type;
 import dmd.backend.dlist;
 import dmd.backend.dvec;
 
-extern (C++):
-
 nothrow:
 
 void ferr(const(char)* p) { printf("%s", p); }

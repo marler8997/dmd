@@ -19,8 +19,6 @@ version (SPP) {} else
     import dmd.root.longdouble;
     import dmd.backend.cdef;
 
-    extern (C++):
-
     nothrow:
 
     int statusFE()

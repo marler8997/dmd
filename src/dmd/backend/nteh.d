@@ -48,8 +48,6 @@ else version (HTOD)
 static if (NTEXCEPTIONS)
 {
 
-extern (C++):
-
 nothrow:
 
 int REGSIZE();

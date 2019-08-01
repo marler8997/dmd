@@ -15,8 +15,6 @@
 
 import core.stdc.stdio;
 
-extern (C++):
-
 nothrow:
 
 import core.stdc.stdint : uint64_t;

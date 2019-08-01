@@ -16,7 +16,6 @@ module dmd.backend.iasm;
 import dmd.backend.cc : block;
 import dmd.backend.code_x86 : opcode_t;
 
-extern (C++):
 @nogc:
 nothrow:
 

@@ -40,8 +40,6 @@ version (SCPP)
     import msgs2;
 }
 
-extern (C++):
-
 nothrow:
 
 dt_t *dt_get_nzeros(uint n);

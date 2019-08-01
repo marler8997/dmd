@@ -56,8 +56,6 @@ version (MARS)
     import dmd.backend.varstats;
 }
 
-extern (C++):
-
 nothrow:
 
 enum SYMDEB_TDB = false;
@@ -2760,8 +2758,6 @@ version (MARS)
             ushort seg;
             ubyte[2] name;
         }
-
-      extern (C++):
 
         static void endArgs()
         {

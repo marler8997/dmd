@@ -64,8 +64,6 @@ version (SCPPorHTOD)
 version (MARS)
     struct token_t;
 
-extern (C++):
-
 nothrow:
 
 bool NEWTEMPMANGLE() { return !(config.flags4 & CFG4oldtmangle); }     // do new template mangling

@@ -60,8 +60,6 @@ version (Windows)
     }
 }
 
-extern (C++):
-
 nothrow:
 
 void dt_writeToObj(Obj objmod, dt_t *dt, int seg, ref targ_size_t offset);

@@ -40,8 +40,6 @@ import dmd.backend.type;
 import dmd.backend.varstats;
 import dmd.backend.xmm;
 
-extern (C++):
-
 nothrow:
 
 static if (TARGET_WINDOS)
@@ -461,13 +459,13 @@ void cv8_func_term(Symbol *sfunc)
             ubyte[1] name;
         }
 
-        extern (C++) static void endArgs()
+        static void endArgs()
         {
             Outbuffer *buf = currentfuncdata.f1buf;
             buf.writeWord(2);
             buf.writeWord(S_ENDARG);
         }
-        extern (C++) static void beginBlock(int offset, int length)
+        static void beginBlock(int offset, int length)
         {
             Outbuffer *buf = currentfuncdata.f1buf;
             uint soffset = cast(uint)buf.size();
@@ -482,7 +480,7 @@ void cv8_func_term(Symbol *sfunc)
             f1f.value = offset;
             currentfuncdata.f1fixup.write(&f1f, f1f.sizeof);
         }
-        extern (C++) static void endBlock()
+        static void endBlock()
         {
             Outbuffer *buf = currentfuncdata.f1buf;
             buf.writeWord(2);

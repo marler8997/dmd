@@ -13,7 +13,6 @@ module dmd.backend.ty;
 
 // Online documentation: https://dlang.org/phobos/dmd_backend_ty.html
 
-extern (C++):
 @nogc:
 nothrow:
 

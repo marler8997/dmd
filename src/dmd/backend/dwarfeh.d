@@ -27,8 +27,6 @@ static if (ELFOBJ || MACHOBJ)
 import dmd.backend.dwarf;
 import dmd.backend.dwarf2;
 
-extern (C++):
-
 nothrow:
 
 struct DwEhTableEntry

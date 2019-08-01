@@ -53,8 +53,6 @@ version (SCPP_HTOD)
     import msgs2;
 }
 
-extern (C++):
-
 nothrow:
 
 /**************************

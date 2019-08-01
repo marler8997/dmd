@@ -51,9 +51,6 @@ void util_free(void* p) { if (p) free(p); }
 void *util_calloc(uint n, uint size) { void* p = calloc(n, size); assert(!(n * size) || p); return p; }
 void *util_realloc(void* p, uint n, uint size) { void* q = realloc(p, n * size); assert(!(n * size) || q); return q; }
 
-extern (C++):
-
-
 /* Since many routines are nearly identical, we can combine them with   */
 /* this flag:                                                           */
 

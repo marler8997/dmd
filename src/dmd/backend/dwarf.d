@@ -10,8 +10,6 @@ import dmd.backend.cdef;
 import dmd.backend.outbuf;
 import dmd.backend.type;
 
-extern (C++):
-
 nothrow:
 
 enum DWARF_VERSION = 3;

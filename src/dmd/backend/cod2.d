@@ -38,8 +38,6 @@ import dmd.backend.ty;
 import dmd.backend.type;
 import dmd.backend.xmm;
 
-extern (C++):
-
 nothrow:
 
 int REGSIZE();

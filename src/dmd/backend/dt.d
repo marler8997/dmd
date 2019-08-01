@@ -26,8 +26,6 @@ import dmd.backend.type;
 nothrow:
 @nogc:
 
-extern (C++):
-
 /**********************************************
  * Free a data definition struct.
  */

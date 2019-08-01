@@ -51,8 +51,6 @@ version (SCPP)
     import precomp;
 }
 
-extern (C++):
-
 nothrow:
 
 version (MARS)

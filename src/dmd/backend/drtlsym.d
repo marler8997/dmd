@@ -34,8 +34,6 @@ import dmd.backend.rtlsym;
 import dmd.backend.ty;
 import dmd.backend.type;
 
-extern (C++):
-
 nothrow:
 
 version (HTOD)

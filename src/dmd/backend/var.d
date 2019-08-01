@@ -41,8 +41,6 @@ version (HTOD)
     import phstring;
 }
 
-extern (C++):
-
 nothrow:
 
 __gshared:

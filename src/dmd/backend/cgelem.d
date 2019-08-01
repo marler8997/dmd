@@ -46,8 +46,6 @@ else
     }
 }
 
-extern (C++):
-
 nothrow:
 
 elem * evalu8(elem *e, goal_t goal);
@@ -5850,9 +5848,9 @@ private bool canHappenAfter(elem* a, elem* b)
  * Call table, index is OPER
  */
 
-private extern (C++) alias elfp_t = elem *function(elem *, goal_t) nothrow;
+private alias elfp_t = elem *function(elem *, goal_t) nothrow;
 
-private extern (D) immutable elfp_t[OPMAX] elxxx =
+private immutable elfp_t[OPMAX] elxxx =
 [
     OPunde:    &elerr,
     OPadd:     &eladd,

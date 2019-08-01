@@ -19,7 +19,6 @@ import dmd.backend.cc : Classsym, Symbol;
 import dmd.backend.dlist;
 import dmd.backend.type;
 
-extern (C++):
 @nogc:
 nothrow:
 

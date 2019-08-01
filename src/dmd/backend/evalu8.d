@@ -43,8 +43,6 @@ import parser;
 import scopeh;
 }
 
-extern (C++):
-
 nothrow:
 
 version (MARS)

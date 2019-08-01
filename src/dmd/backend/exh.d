@@ -18,7 +18,6 @@ import dmd.backend.cdef;
 import dmd.backend.el;
 import dmd.backend.type;
 
-extern (C++):
 @nogc:
 nothrow:
 

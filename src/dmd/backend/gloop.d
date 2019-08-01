@@ -45,8 +45,6 @@ nothrow:
 
 char symbol_isintab(Symbol *s) { return sytab[s.Sclass] & SCSS; }
 
-extern (C++):
-
 bool findloopparameters(elem* erel, ref elem* rdeq, ref elem* rdinc);
 
 /*********************************

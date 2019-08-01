@@ -176,8 +176,6 @@ enum
     RTLSYM_MAX
 }
 
-extern (C++):
-
 nothrow:
 
 Symbol *getRtlsym(int i);

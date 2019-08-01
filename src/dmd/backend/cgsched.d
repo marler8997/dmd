@@ -33,8 +33,6 @@ import dmd.backend.mem;
 import dmd.backend.ty;
 import dmd.backend.barray;
 
-extern (C++):
-
 nothrow:
 
 int REGSIZE();

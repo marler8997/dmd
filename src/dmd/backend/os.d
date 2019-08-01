@@ -52,8 +52,6 @@ else
     enum NEEDS_WIN32_NOT_WIN64 = false;
 
 
-extern(C++):
-
 nothrow:
 
 version (CRuntime_Microsoft)

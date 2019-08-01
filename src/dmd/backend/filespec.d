@@ -10,8 +10,6 @@ import core.stdc.string;
 
 import dmd.backend.mem;
 
-extern (C++):
-
 nothrow:
 
 /*********************************

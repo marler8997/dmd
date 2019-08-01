@@ -40,8 +40,6 @@ version (MARS)
     import dmd.backend.errors;
 
 
-extern (C++):
-
 nothrow:
 
 int REGSIZE();

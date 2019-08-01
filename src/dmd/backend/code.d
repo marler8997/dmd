@@ -23,8 +23,6 @@ import dmd.backend.outbuf;
 import dmd.backend.ty;
 import dmd.backend.type;
 
-extern (C++):
-
 nothrow:
 
 alias segidx_t = int;           // index into SegData[]

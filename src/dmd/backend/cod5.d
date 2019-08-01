@@ -32,8 +32,6 @@ import dmd.backend.cdef;
 import dmd.backend.dlist;
 import dmd.backend.ty;
 
-extern(C++):
-
 nothrow:
 
 private void pe_add(block *b);

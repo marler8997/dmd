@@ -135,8 +135,8 @@ enum
 enum RMload  = (1 << 30);
 enum RMstore = (1 << 31);
 
-extern (C++) extern __gshared regm_t ALLREGS;
-extern (C++) extern __gshared regm_t BYTEREGS;
+extern __gshared regm_t ALLREGS;
+extern __gshared regm_t BYTEREGS;
 
 static if (TARGET_LINUX || TARGET_OSX || TARGET_FREEBSD || TARGET_OPENBSD || TARGET_DRAGONFLYBSD || TARGET_SOLARIS)
 {
@@ -399,7 +399,7 @@ struct code
 
     bool isJumpOP() { return Iop == JMP || Iop == JMPS; }
 
-    extern (C++) void print()               // pretty-printer
+    void print()               // pretty-printer
     {
         code_print(&this);
     }
@@ -549,8 +549,6 @@ bool ADDFWAIT() { return config.target_cpu <= TARGET_80286; }
 
 /************************************
  */
-
-extern (C++):
 
 struct NDP
 {

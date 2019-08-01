@@ -43,8 +43,6 @@ import dmd.backend.outbuf;
 import dmd.backend.ty;
 import dmd.backend.type;
 
-extern (C++):
-
 nothrow:
 
 static if (ELFOBJ)

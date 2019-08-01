@@ -36,8 +36,6 @@ import dmd.backend.type;
 import dmd.backend.dlist;
 import dmd.backend.dvec;
 
-extern (C++):
-
 nothrow:
 
 enum Aetype { cse, arraybounds }

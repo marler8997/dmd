@@ -55,8 +55,6 @@ version (SCPP)
     import precomp;
 }
 
-extern (C++):
-
 nothrow:
 
 alias _compare_fp_t = extern(C) nothrow int function(const void*, const void*);
@@ -2775,7 +2773,7 @@ void callcdxxx(ref CodeBuilder cdb, elem *e, regm_t *pretregs, OPER op)
 }
 
 // jump table
-private extern (C++) __gshared nothrow void function (ref CodeBuilder,elem *,regm_t *)[OPMAX] cdxxx =
+private __gshared nothrow void function (ref CodeBuilder,elem *,regm_t *)[OPMAX] cdxxx =
 [
     OPunde:    &cderr,
     OPadd:     &cdorth,

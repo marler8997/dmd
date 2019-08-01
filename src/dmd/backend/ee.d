@@ -36,8 +36,6 @@ import parser;
 
 import dmd.backend.iasm;
 
-extern(C++):
-
 nothrow:
 
 version (MARS)
