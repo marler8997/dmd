@@ -148,8 +148,8 @@ void updateRealEnvironment(ref StringTable environment)
         const value = cast(const(char)*)sv.ptrvalue;
         if (!value) // deleted?
             return 0;
-        if (0 != putenvRestorable(name.toDString, value.toDString))
-            assert(0, "putenvRestorable failed");
+        if (putenvRestorable(name.toDString, value.toDString))
+            assert(0);
         return 0; // do all of them
     }
 

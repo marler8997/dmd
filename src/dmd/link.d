@@ -1058,8 +1058,8 @@ version (Windows)
                     memcpy(npath + 5, addpath, addpathlen);
                     npath[5 + addpathlen] = ';';
                     memcpy(npath + 5 + addpathlen + 1, path, pathlen + 1);
-                    if (LocalEnvVar(cast(string)npath[0 .. length], 4).putenvRestorable != 0)
-                        assert(0, "putenvRestorable failed");
+                    if (LocalEnvVar(cast(string)npath[0 .. length], 4).addToEnvRestorable)
+                        assert(0);
                     mem.xfree(npath); // on windows putenv makes a copy so we can free
                 }
                 return cmdbuf.extractChars();

@@ -12,22 +12,28 @@ version (Windows)
 
 /**
 Construct a variable from `name` and `value` and put it in the environment while saving
-the current value of the environment variable.
+the previous value of the environment variable into a global list so it can be restored later.
+Params:
+    name = the name of the variable
+    value = the value of the variable
 Returns:
-    0 on success, non-zero on failure
+    true on error, false on success
 */
-int putenvRestorable(const(char)[] name, const(char)[] value) nothrow
+bool putenvRestorable(const(char)[] name, const(char)[] value) nothrow
 {
-    auto var = LocalEnvVar.xmalloc(name, value);
-    const result = var.putenvRestorable();
-    var.xfree(result);
+    auto var = LocalEnvVar.alloc(name, value);
+    const result = var.addToEnvRestorable();
+    version (Windows)
+        mem.xfree(cast(void*)var.nameValueCStr.ptr);
+    else if (result)
+        mem.xfree(cast(void*)var.nameValueCStr.ptr);
     return result;
 }
 
-/// Holds a `VAR=value` string that can be put into the global environment.
+/// Holds a `name=value` string that can be put into the global environment.
 struct LocalEnvVar
 {
-    string nameValueCStr;        // The argument passed to `putenv`.
+    string nameValueCStr;        // The null-terminated `name=value` string that will be passed to `putenv`.
     private size_t equalsIndex;  // index of '=' in nameValueCStr.
 
     /// The name of the variable
@@ -37,26 +43,26 @@ struct LocalEnvVar
     auto value() const { return nameValueCStr[equalsIndex + 1 .. $]; }
 
     /**
-    Put this variable in the environment while saving the current value of the
-    environment variable.
+    Put this variable in the environment while saving the previous value of the
+    environment variable into a global list so it can be restored later.
     Returns:
-        0 on success, non-zero on failure
+        true on error, false on success
     */
-    int putenvRestorable() const nothrow
+    bool addToEnvRestorable() const nothrow
     {
         RestorableEnv.save(name);
-        return .putenv(cast(char*)nameValueCStr.ptr);
+        return putenv(cast(char*)nameValueCStr.ptr) ? true : false;
     }
 
     /**
-    Allocate a new variable via xmalloc that can be promoted to the global environment.
+    Allocate a new variable via xmalloc that can be added to the global environment.
     Params:
         name = name of the variable
         value = value of the variable
     Returns:
-        a newly allocated variable that can be promoted to the global environment
+        a newly allocated variable that can be added to the global environment
     */
-    static LocalEnvVar xmalloc(const(char)[] name, const(char)[] value) nothrow
+    static LocalEnvVar alloc(const(char)[] name, const(char)[] value) nothrow
     {
         const length = name.length + 1 + value.length;
         auto str = (cast(char*)mem.xmalloc(length + 1))[0 .. length];
@@ -65,21 +71,6 @@ struct LocalEnvVar
         str[name.length + 1 .. length] = value[];
         str.ptr[length] = '\0';
         return LocalEnvVar(cast(string)str, name.length);
-    }
-
-    private void xfree(int putenvResult) const nothrow
-    {
-        bool doFree;
-        version (Windows)
-            doFree = true;
-        else
-        {
-            // on posix, when putenv succeeds ownership of the memory is transferred
-            // to the global environment
-            doFree = (putenvResult != 0);
-        }
-        if (doFree)
-            mem.xfree(cast(void*)nameValueCStr.ptr);
     }
 }
 
@@ -94,8 +85,8 @@ struct RestorableEnv
     {
         foreach (var; originalVars)
         {
-            if (0 != putenv(cast(char*)var.nameValueCStr))
-                assert(0, "putenv failed");
+            if (putenv(cast(char*)var.nameValueCStr))
+                assert(0);
         }
     }
 
@@ -107,7 +98,7 @@ struct RestorableEnv
             if (name == var.name)
                 return; // already saved
         }
-        originalVars.push(LocalEnvVar.xmalloc(name,
+        originalVars.push(LocalEnvVar.alloc(name,
             name.toCStringThen!(n => getenv(n.ptr)).toDString));
     }
 }
