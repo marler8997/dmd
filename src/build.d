@@ -38,6 +38,7 @@ immutable rootDeps = [
     &runCxxUnittest,
     &zip,
     &html,
+    &lexer2,
 ];
 
 void main(string[] args)
@@ -101,7 +102,15 @@ Command-line parameters
     parseEnvironment;
     processEnvironment;
     processEnvironmentCxx;
+
     sources = sourceFiles;
+
+    // setup buildVars
+    version(Windows)
+        buildVars["libext"] = ".lib";
+    else
+        buildVars["libext"] = ".a";
+    buildVars["lexer_srcs"] = 
 
     if (res.helpWanted)
         return showHelp;
@@ -192,6 +201,65 @@ This script is by default part of the sources and thus any change to the build s
 will trigger a full rebuild.
 
 */
+
+// variables available to be expanded in strings that are not environment variables
+string[string] buildVars;
+
+auto buildDep()
+{
+    struct DepBuilder
+    {
+        Dependency dep;
+        auto ref name(string s) { dep.name = processOne(s); return this; }
+        auto ref targets(string s) { dep.targets ~= process(s); return this; }
+        auto ref deps(string s) { return this; } //dep.deps = s; }
+        auto ref exec(string[] s) { return this; } //this._execs = s; }
+        string processOne(string s)
+        {
+            return s;
+        }
+        string[] process(string s)
+        {
+            return s.splitter.map!(part => {
+                writefln("TODO: process '%s'", part);
+                return shellExpand(part, &resolveVar);
+            }()).array;
+        }
+        private string resolveVar(const(char)[] varname)
+        {
+            if (varname == "this.name")
+            {
+                enforce(dep.name, format("${%s} has not been set", varname));
+                return dep.name;
+            }
+            {
+                auto value = buildVars.get(cast(string)varname, null);
+                if (value !is null)
+                    return value;
+            }
+            {
+                auto value = env.get(cast(string)varname, null);
+                enforce(value !is null, format("variable '$%s' has not been set", varname));
+                return value;
+            }
+        }
+        DependencyRef create()
+        {
+            return new DependencyRef(dep);
+        }
+    }
+    return DepBuilder();
+}
+
+alias lexer2 = memoize!(function() { return buildDep
+    .name("lexer2")
+    .targets("$G/lexer$libext")
+    .deps("$LEXER_SRCS")
+    .exec([
+        "${HOST_DMD_RUN} -of=${this.target} -lib -vtls -J${RES} ${DFLAGS} ${LEXER_SRCS}"
+    ])
+    .create;
+});
 
 /// Returns: the dependency that builds the lexer
 alias lexer = memoize!(function()
@@ -1505,4 +1573,60 @@ version (CRuntime_DigitalMars)
 {
     // workaround issue https://issues.dlang.org/show_bug.cgi?id=13727
     auto parallel(R)(R range, size_t workUnitSize) { return range; }
+}
+
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// COPIED FROM dshell
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// [a-zA-Z0-9_]
+private bool validVarChar(const char c)
+{
+    import std.ascii : isAlphaNum;
+    return c.isAlphaNum || c == '_';
+}
+
+/// Expand the given string using BASH-like variable expansion.
+string shellExpand(Resolver)(const(char)[] s, Resolver resolver)
+{
+    auto expanded = appender!(char[])();
+    for (size_t i = 0; i < s.length;)
+    {
+        if (s[i] != '$')
+        {
+            expanded.put(s[i]);
+            i++;
+        }
+        else
+        {
+            i++;
+            assert(i < s.length, "lone '$' at end of string");
+            auto start = i;
+            if (s[i] == '{')
+            {
+                start++;
+                for (;;)
+                {
+                    i++;
+                    assert(i < s.length, "unterminated ${...");
+                    if (s[i] == '}') break;
+                }
+                expanded.put(resolver(s[start .. i]));
+                i++;
+            }
+            else
+            {
+                assert(validVarChar(s[i]), "invalid sequence $'" ~ s[i]);
+                for (;;)
+                {
+                    i++;
+                    if (i >= s.length || !validVarChar(s[i]))
+                        break;
+                }
+                expanded.put(resolver(s[start .. i]));
+            }
+        }
+    }
+    auto result = expanded.data;
+    return (result is null) ? "" : result.assumeUnique;
 }
