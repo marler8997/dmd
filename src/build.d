@@ -33,6 +33,7 @@ __gshared typeof(sourceFiles()) sources;
 immutable rootDeps = [
     &dmdDefault,
     &runDmdUnittest,
+    &buildExamples,
     &clean,
     &checkwhitespace,
     &runCxxUnittest,
@@ -381,6 +382,18 @@ alias runCxxUnittest = makeDep!((runCxxBuilder, runCxxDep) {
         .deps([cxxUnittestExe])
         .command([cxxUnittestExe.target]);
 });
+
+alias buildExamples = makeDep!((buildExamplesBuilder, buildExamplesDep) => buildExamplesBuilder
+    .name("build-examples")
+    .description("Build DMD as library examples")
+    .deps(["avg.d", "impvisitor.d"].map!(exampleName => methodInit!(Dependency, (exampleBuilder, exampleDep) =>
+        exampleBuilder
+        .name(exampleName)
+        // TODO: running impvisitor.d fails, so only building it for now
+        .command(["dub", (exampleName == "avg.d") ? "run" : "build", "--single", env["EX"].buildPath(exampleName)])
+        .msg(exampleDep.command.join(" "))
+    )).array)
+);
 
 /// Dependency that removes all generated files
 alias clean = makeDep!((builder, dep) => builder

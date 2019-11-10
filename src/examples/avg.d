@@ -20,6 +20,7 @@ import dmd.identifier;
 
 import std.stdio;
 import std.file;
+import std.path;
 
 extern(C++) class FunctionLengthVisitor(AST) : ParseTimeTransitiveVisitor!AST
 {
@@ -46,7 +47,7 @@ extern(C++) class FunctionLengthVisitor(AST) : ParseTimeTransitiveVisitor!AST
 
 void main()
 {
-    string fname = "examples/testavg.d";
+    string fname = __FILE_FULL_PATH__.dirName.buildPath("testavg.d");
 
     Id.initialize();
     global._init();
