@@ -22,7 +22,6 @@ version(CoreDdoc) {} else:
 
 import std.algorithm, std.conv, std.datetime, std.exception, std.file, std.format, std.functional,
        std.getopt, std.parallelism, std.path, std.process, std.range, std.stdio, std.string, std.traits;
-import core.stdc.stdlib : exit;
 
 const thisBuildScript = __FILE_FULL_PATH__.buildNormalizedPath;
 const srcDir = thisBuildScript.dirName;
@@ -614,7 +613,7 @@ LtargetsLoop:
                 }
                 writefln("ERROR: Target `%s` is unknown.", t);
                 writeln;
-                exit(1);
+                abortBuild();
                 break;
         }
     }
@@ -671,7 +670,7 @@ void parseEnvironment()
             else
             {
                 writefln("Error: DDEBUG is not an expected value '%s'", ddebug);
-                exit(1);
+                abortBuild();
             }
         }
     }
@@ -780,7 +779,7 @@ void parseEnvironment()
     if (!env["HOST_DMD_PATH"].exists)
     {
         stderr.writefln("No DMD compiler is installed. Try AUTO_BOOTSTRAP=1 or manually set the D host compiler with HOST_DMD");
-        exit(1);
+        abortBuild();
     }
 }
 
@@ -1449,6 +1448,12 @@ auto log(T...)(T args)
         writefln(args);
 }
 
+/// Aborts the current build
+void abortBuild()
+{
+    throw new Exception("Build failed!");
+}
+
 /**
 The directory where all run commands are executed from.  All relative file paths
 in a `run` command must be relative to `runDir`.
@@ -1481,7 +1486,7 @@ auto runCanThrow(T)(T args)
     if (res.status)
     {
         writeln(res.output ? res.output : format("last command failed with exit code %s", res.status));
-        exit(1);
+        abortBuild();
     }
     return res.output;
 }
