@@ -48,7 +48,15 @@ immutable rootDeps = [
     &toolchainInfo
 ];
 
-void main(string[] args)
+class BuildException : Exception { this() { super("Build Failed"); } }
+
+int main(string[] args)
+{
+    try { return mainImpl(args); }
+    catch (BuildException e) { return 1; }
+}
+
+int mainImpl(string[] args)
 {
     int jobs = totalCPUs;
     bool calledFromMake = false;
@@ -59,7 +67,7 @@ void main(string[] args)
         "d|dry-run", "Print commands instead of executing them", (cast(bool*) &dryRun),
         "called-from-make", "Calling the build script from the Makefile", &calledFromMake
     );
-    void showHelp()
+    int showHelp()
     {
         defaultGetoptPrinter(`./build.d <targets>...
 
@@ -100,7 +108,7 @@ The generated files will be in generated/$(OS)/$(BUILD)/$(MODEL)
 Command-line parameters
 -----------------------
 `, res.options);
-        return;
+        return 1;
     }
 
     // parse arguments
@@ -153,6 +161,7 @@ Command-line parameters
     }
 
     writeln("Success");
+    return 0;
 }
 
 /// Generate list of targets for use in the help message
@@ -1451,7 +1460,7 @@ auto log(T...)(T args)
 /// Aborts the current build
 void abortBuild()
 {
-    throw new Exception("Build failed!");
+    throw new BuildException();
 }
 
 /**
