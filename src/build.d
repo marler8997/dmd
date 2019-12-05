@@ -20,7 +20,10 @@ TODO:
 version(CoreDdoc) {} else:
 
 import std.algorithm, std.conv, std.datetime, std.exception, std.file, std.format, std.functional,
-       std.getopt, std.parallelism, std.path, std.process, std.range, std.stdio, std.string, std.traits;
+       std.getopt, std.path, std.process, std.range, std.stdio, std.string, std.traits;
+
+import std.parallelism : totalCPUs;
+import std.concurrency : thisTid;
 
 const thisBuildScript = __FILE_FULL_PATH__.buildNormalizedPath;
 const srcDir = thisBuildScript.dirName;
@@ -32,6 +35,7 @@ shared bool dryRun; /// dont execute targets, just print command to be executed
 __gshared string[string] env;
 __gshared string[][string] flags;
 __gshared typeof(sourceFiles()) sources;
+__gshared Scheduler!Dependency scheduler = void;
 
 /// Array of dependencies through which all other dependencies can be reached
 immutable rootDeps = [
@@ -48,7 +52,38 @@ immutable rootDeps = [
     &toolchainInfo,
     &style,
     &man,
+    &testDeps,
 ];
+alias testDeps = makeDep!((testBuilder, testDep) {
+    import core.thread;
+    static Dependency[] makeSet(string names, Dependency[] deps)
+    {
+        return names.split().map!(e =>
+            methodInit!(Dependency, (b, d) => b
+                .name(e)
+                .msg("Building " ~ e)
+                .deps(deps)
+                .commandFunction(() { Thread.sleep(dur!"seconds"(1)); })
+            )
+        ).array;
+    }
+    auto set0 = makeSet("0a 0b 0c 0d", null);
+    auto set1a = makeSet("1a 1b", set0);
+    auto set1b = makeSet("1c 1d", set0);
+    //auto set1c = makeSet("1c", set0);
+    //auto set1d = makeSet("1d", set0);
+    /*
+    auto set2a = makeSet("2a", set1a);
+    auto set2b = makeSet("2b", set1b);
+    auto set2c = makeSet("2c 2d", set1c);
+    */
+
+    testBuilder
+    .name("testdeps")
+    //.deps(set2a ~ set2b ~ set2c)
+    .deps(set1a ~ set1b)// ~ set1c ~ set1d)
+    ;
+});
 
 int main(string[] args)
 {
@@ -134,9 +169,7 @@ Command-line parameters
     if (!args.length)
         args = ["dmd"];
 
-    auto targets = args
-        .predefinedTargets // preprocess
-        .array;
+    auto targets = predefinedTargets(args); // preprocess
 
     if (targets.length == 0)
         return showHelp;
@@ -164,8 +197,26 @@ Command-line parameters
                 lockFile.close();
             }
         }
-        foreach (target; targets.parallel(1))
-            target();
+
+        // workaround issue https://issues.dlang.org/show_bug.cgi?id=13727
+        version (CRuntime_DigitalMars)
+        {
+            pragma(msg, "Warning: Parallel builds disabled because of Issue 13727!");
+            jobs = 1; // Fall back to a sequential build
+        }
+        else version (OSX)
+        {
+            // FIXME: Parallel executions hangs reliably on Mac  (esp. the 'macair'
+            // host used by the autotester) for unknown reasons outside of this script.
+            // Disable parallel execution until this issue has been resolved.
+            jobs = 2;
+        }
+
+        if (jobs <= 0)
+            abortBuild("Invalid number of jobs: %d".format(jobs));
+
+        scheduler.init(jobs - 1);
+        Dependency.build(targets);
     }
 
     writeln("Success");
@@ -456,7 +507,8 @@ alias checkwhitespace = makeDep!((builder, dep) => builder
         auto chunkLength = allSources.length;
         version (Win32)
             chunkLength = 80; // avoid command-line limit on win32
-        foreach (nextSources; allSources.chunks(chunkLength).parallel(1))
+        // if we want this to be parallel, we can make multiple deps
+        foreach (nextSources; allSources.chunks(chunkLength))
         {
             const nextCommand = cmdPrefix ~ nextSources;
             run(nextCommand);
@@ -659,10 +711,10 @@ Params:
 Returns:
     the expanded targets
 */
-auto predefinedTargets(string[] targets)
+Dependency[] predefinedTargets(string[] targets)
 {
     import std.functional : toDelegate;
-    Appender!(void delegate()[]) newTargets;
+    Appender!(Dependency[]) newTargets;
 LtargetsLoop:
     foreach (t; targets)
     {
@@ -673,7 +725,7 @@ LtargetsLoop:
         {
             if (t == dep.name)
             {
-                newTargets.put(&dep.run);
+                newTargets.put(dep);
                 continue LtargetsLoop;
             }
         }
@@ -697,7 +749,7 @@ LtargetsLoop:
                     {
                         if (depTarget.endsWith(t, tAbsolute))
                         {
-                            newTargets.put(&dep.run);
+                            newTargets.put(dep);
                             continue LtargetsLoop;
                         }
                     }
@@ -1397,8 +1449,6 @@ class Dependency
     string name; /// optional string that can be used to identify this dependency
     string description; /// optional string to describe this dependency rather than printing the target files
 
-    private bool executed;
-
     /// Finish creating the dependency by checking that it is configured properly
     void finalize()
     {
@@ -1412,23 +1462,17 @@ class Dependency
     /// Executes the dependency
     void run()
     {
-        synchronized (this)
-            runSynchronized();
-    }
-
-    private void runSynchronized()
-    {
-        if (executed)
-            return;
-        scope (exit) executed = true;
-        scope (failure) if (verbose) dump();
-
-        bool depUpdated = false;
-        foreach (dep; deps.parallel(1))
+        import core.atomic : atomicOp;
+        run2();
+        foreach (dependant; dependants)
         {
-            dep.run();
+            auto built = dependant.builtDeps.atomicOp!"+="(1);
+            if (built == dependant.deps.length)
+                scheduler.schedule(dependant);
         }
-
+    }
+    private void run2()
+    {
         if (condition !is null && !condition())
         {
             log("Skipping build of %-(%s%) as its condition returned false", targets);
@@ -1444,7 +1488,7 @@ class Dependency
 
         // Display the execution of the dependency
         if (msg)
-            msg.writeln;
+            writefln("[%s] %s", thisTid, msg);
 
         if(dryRun)
         {
@@ -1478,6 +1522,51 @@ class Dependency
                 command.run;
             }
         }
+    }
+
+     // Metadata required for parallel execution
+    private
+    {
+        shared uint builtDeps; /// amount of dependencies already built
+        bool visited; /// whether this dependency was already visited
+        Dependency[] dependants; /// dependencies relying on this one
+    }
+
+    /**
+    Builds all supplied targets using the global taskPool to execute buildRecursive
+    for every leaf dependency.
+
+    Params:
+        targets = dependencies to build
+    **/
+    static void build(Dependency[] targets)
+    {
+        Appender!(Dependency[]) startDeps;
+        //// Recursively appends all dependencies without further dependencies to leafs
+        static void walkDeps(Dependency rule, ref Appender!(Dependency[]) startDeps)
+        {
+            if (rule.visited) return;
+            rule.visited = true;
+
+            if (rule.deps.empty)
+                startDeps.put(rule);
+            else
+            {
+                foreach (dep; rule.deps)
+                {
+                    dep.dependants ~= rule;
+                    walkDeps(dep, startDeps);
+                }
+            }
+        }
+        // Determine all executable dependencies (we can use lockedData.pending because scheduler is not running yet)
+        targets.each!(t => walkDeps(t, startDeps));
+        // we walk all before starting any because walking modifies the data
+        // of the dependencies (this should be fixed)
+        writefln("%s starting deps", startDeps.data.length);
+        foreach (dep; startDeps.data)
+            scheduler.schedule(dep);
+        scheduler.runOnCurrentThread();
     }
 
     /// Writes relevant informations about this dependency to stdout
@@ -1561,7 +1650,6 @@ Aborts the current build
 
 TODO:
     - Display detailed error messages
-    - Handle spawned processes
 
 Params:
     msg = error message to display
@@ -1572,6 +1660,10 @@ Returns: nothing but enables `throw abortBuild` to convey the resulting behavior
 */
 BuildException abortBuild(string msg = "Build failed!")
 {
+    //scheduler.stop();
+    //if (task !is null)
+    //    taskPool.stop();
+
     throw new BuildException(msg);
 }
 
@@ -1620,16 +1712,129 @@ auto run(T)(T args)
     return res.output;
 }
 
-version (CRuntime_DigitalMars)
-{
-    // workaround issue https://issues.dlang.org/show_bug.cgi?id=13727
-    auto parallel(R)(R range, size_t workUnitSize) { return range; }
-}
-
 /** Wrapper around std.file.copy that also updates the target timestamp. */
 void copyAndTouch(RF, RT)(RF from, RT to)
 {
     std.file.copy(from, to);
     const now = Clock.currTime;
     to.setTimes(now, now);
+}
+
+bool tryPop(T)(ref Appender!(T[]) a, T* result)
+{
+    if (a.data.length == 0)
+        return false;
+    *result = a.data[$-1];
+    a.shrinkTo(a.data.length - 1);
+    return true;
+}
+
+//
+// This is generic enough to be in the standard library
+// TODO: can we make this 'shared' correct?
+//
+struct Scheduler(Task)
+{
+    import core.sync.mutex;
+    import std.concurrency;
+
+    private uint maxSpawnCount; // the maximum number of threads that will be spawned
+                                // to handle scheduled tasks
+    private shared Mutex mutex;
+    // This data must be used within the mutex lock while the scheduler is running
+    struct LockedData
+    {
+        private Appender!(Task[]) pending;
+        private size_t spawnCount; // the number of threads that have been spawned
+        private size_t externalThreadCount; // the number of threads running that were not spawned
+        private size_t waitingCount;
+        private Appender!(Tid[]) idle;
+    }
+    private LockedData lockedData;
+
+    void init(uint maxSpawnCount)
+    {
+        this.maxSpawnCount = maxSpawnCount;
+        mutex = new shared Mutex();
+        lockedData.pending = appender!(Task[])();
+        lockedData.waitingCount = 0;
+    }
+
+    void schedule(Task task)
+    {
+        mutex.lock_nothrow();
+        scope(exit) mutex.unlock_nothrow();
+        {
+            Tid tid;
+            if (lockedData.idle.tryPop(&tid))
+            {
+                send(tid, cast(shared(Task))task);
+                return;
+            }
+        }
+        if (lockedData.spawnCount < maxSpawnCount)
+        {
+            spawn(&threadLoop, cast(shared(Scheduler!Task)*)&this, cast(shared(Task))task);
+            //t.isDaemon = true;
+            lockedData.spawnCount++;
+        }
+        else
+        {
+            // save the task to be executed when a thread becomes available
+            lockedData.pending.put(task);
+        }
+    }
+
+    void runOnCurrentThread()
+    {
+        {
+            mutex.lock_nothrow();
+            scope(exit) mutex.unlock_nothrow();
+            lockedData.externalThreadCount++;
+        }
+        threadLoop(cast(shared(Scheduler!Task)*)&this, null);
+    }
+    private static void threadLoop(shared(Scheduler!Task)* sharedScheduler, shared(Task) initialTask)
+    {
+        if (initialTask)
+            (cast(Task)initialTask).run();
+
+        // hack to work around shared
+        Scheduler!Task* s = cast(Scheduler!Task*)sharedScheduler;
+        while (true)
+        {
+            // handle all pending first
+            while (true)
+            {
+                Task nextTask = void;
+                {
+                    s.mutex.lock_nothrow();
+                    scope(exit) s.mutex.unlock_nothrow();
+                    if (!s.lockedData.pending.tryPop(&nextTask))
+                    {
+                        s.lockedData.idle.put(thisTid);
+                        // check if everyone is idle
+                        if (s.lockedData.idle.data.length == s.lockedData.spawnCount + s.lockedData.externalThreadCount)
+                        {
+                            foreach (tid; s.lockedData.idle.data)
+                            {
+                                send(tid, cast(shared(Task))null);
+                            }
+                        }
+                        break;
+                    }
+                }
+                nextTask.run();
+            }
+            Task task = void;
+            try {
+                task = cast(Task)receiveOnly!(shared(Task));
+            } catch (LinkTerminated) {
+                task = null;
+            }
+            if (task is null)
+                break;
+            task.run();
+        }
+    }
 }
