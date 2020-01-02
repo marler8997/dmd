@@ -247,9 +247,11 @@ struct IRState
                 FuncDeclaration fd = getFunc();
                 if (fd)
                 {
-                    Type t = fd.type;
-                    if (t.ty == Tfunction && (cast(TypeFunction)t).trust == TRUST.safe)
-                        result = true;
+                    if (auto tf = fd.type.isTypeFunction())
+                    {
+                        result = tf.trust == TRUST.safe ||
+                                 tf.trust == TRUST.default_ && global.params.safeDefault;
+                    }
                 }
                 break;
             }

@@ -396,15 +396,19 @@ public:
         else if (ta.isscope && !ta.isscopeinferred)
             buf.writestring("Nl");
 
-        switch (ta.trust)
+        final switch (ta.trust)
         {
+            case TRUST.default_:
+                if (global.params.safeDefault)
+                    goto case TRUST.safe;
+                break;
             case TRUST.trusted:
                 buf.writestring("Ne");
                 break;
             case TRUST.safe:
                 buf.writestring("Nf");
                 break;
-            default:
+            case TRUST.system:
                 break;
         }
 
